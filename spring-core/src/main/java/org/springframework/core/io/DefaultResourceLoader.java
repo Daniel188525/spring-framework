@@ -144,6 +144,9 @@ public class DefaultResourceLoader implements ResourceLoader {
 	public Resource getResource(String location) {
 		Assert.notNull(location, "Location must not be null");
 
+		// 通过 ProtocolResolver 来加载资源[SPI]
+		// org.springframework.core.io.ProtocolResolver 用户自定义协议资源解决策略
+		// 调用addProtocolResolver方法添加自定义资源解析器
 		for (ProtocolResolver protocolResolver : getProtocolResolvers()) {
 			Resource resource = protocolResolver.resolve(location, this);
 			if (resource != null) {
@@ -151,14 +154,17 @@ public class DefaultResourceLoader implements ResourceLoader {
 			}
 		}
 
+		// 以 / 开头，返回 ClassPathContextResource 类型的资源
 		if (location.startsWith("/")) {
 			return getResourceByPath(location);
 		}
+		// 以 classpath: 开头，返回 ClassPathResource 类型的资源
 		else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
 			return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
 		}
 		else {
 			try {
+				// 根据是否为文件 URL ，是则返回 FileUrlResource 类型的资源，否则返回 UrlResource 类型的资源
 				// Try to parse the location as a URL...
 				URL url = new URL(location);
 				return (ResourceUtils.isFileURL(url) ? new FileUrlResource(url) : new UrlResource(url));

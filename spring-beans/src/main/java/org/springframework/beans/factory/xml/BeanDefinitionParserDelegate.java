@@ -68,7 +68,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
+ * 用于解析XML bean定义的有状态委托类
  * Stateful delegate class used to parse XML bean definitions.
+ * 供主解析器和任何扩展使用
  * Intended for use by both the main parser and any extension
  * {@link BeanDefinitionParser BeanDefinitionParsers} or
  * {@link BeanDefinitionDecorator BeanDefinitionDecorators}.
@@ -247,6 +249,7 @@ public class BeanDefinitionParserDelegate {
 	 */
 	public BeanDefinitionParserDelegate(XmlReaderContext readerContext) {
 		Assert.notNull(readerContext, "XmlReaderContext must not be null");
+		// readerContext[注册bean定义  解析命名空间]
 		this.readerContext = readerContext;
 	}
 

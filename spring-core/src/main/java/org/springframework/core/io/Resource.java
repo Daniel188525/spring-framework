@@ -51,6 +51,7 @@ import org.springframework.lang.Nullable;
  */
 public interface Resource extends InputStreamSource {
 
+	// 资源是否存在
 	/**
 	 * Determine whether this resource actually exists in physical form.
 	 * <p>This method performs a definitive existence check, whereas the
@@ -59,6 +60,7 @@ public interface Resource extends InputStreamSource {
 	 */
 	boolean exists();
 
+	// 资源是否可读
 	/**
 	 * Indicate whether non-empty contents of this resource can be read via
 	 * {@link #getInputStream()}.
@@ -74,6 +76,7 @@ public interface Resource extends InputStreamSource {
 		return exists();
 	}
 
+	// 资源所代表的句柄是否被一个 stream 打开了
 	/**
 	 * Indicate whether this resource represents a handle with an open stream.
 	 * If {@code true}, the InputStream cannot be read multiple times,

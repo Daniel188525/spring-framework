@@ -44,7 +44,7 @@ public interface ResourceLoader {
 	/** Pseudo URL prefix for loading from the class path: "classpath:". */
 	String CLASSPATH_URL_PREFIX = ResourceUtils.CLASSPATH_URL_PREFIX;
 
-
+	// 每次只能返回一个resource
 	/**
 	 * Return a Resource handle for the specified resource location.
 	 * <p>The handle should always be a reusable resource descriptor,
