@@ -415,17 +415,21 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+		// id和name
 		String id = ele.getAttribute(ID_ATTRIBUTE);
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
 
+		// 别名
 		List<String> aliases = new ArrayList<>();
 		if (StringUtils.hasLength(nameAttr)) {
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
+		// 优先ID作为beanName
 		String beanName = id;
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
+			// 若ID为空,优先设置第一个别名为beanName
 			beanName = aliases.remove(0);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No XML 'id' specified - using '" + beanName +
@@ -434,12 +438,14 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		if (containingBean == null) {
+			// 检查beanName的唯一性
 			checkNameUniqueness(beanName, aliases, ele);
 		}
 
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
 			if (!StringUtils.hasText(beanName)) {
+				// 还未设置beanName时,后续生成对应的beanName
 				try {
 					if (containingBean != null) {
 						beanName = BeanDefinitionReaderUtils.generateBeanName(
@@ -520,12 +526,22 @@ public class BeanDefinitionParserDelegate {
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
+			// 元数据
 			parseMetaElements(ele, bd);
+
+			// 以下两个标签很少使用lookup-ovveride  replaced-method
+			// Spring 动态改变 bean 里方法的实现
+			// 获取器注入[该方法可以用于设计一些可插拔的功能上，解除程序依赖]
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+			// Spring 动态改变 bean 里方法的实现
+			// 可以在运行时调用新的方法替换现有的方法，还能动态的更新原有方法的逻辑
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
+			// 构造参数
 			parseConstructorArgElements(ele, bd);
+			// property属性
 			parsePropertyElements(ele, bd);
+			// qualifier属性
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());
