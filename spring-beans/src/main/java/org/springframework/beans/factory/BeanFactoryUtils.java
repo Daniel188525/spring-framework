@@ -72,6 +72,10 @@ public abstract class BeanFactoryUtils {
 	}
 
 	/**
+	 * 去除 FactoryBean 的修饰符 &, eg. &studernt --> student
+	 * 获取 FactoryBean 本身时使用的 beanName 带有 & 符号
+	 * 获取 FactoryBean 创建的 Bean 时 使用不带 & 符号的 beanName
+	 *
 	 * Return the actual bean name, stripping out the factory dereference
 	 * prefix (if any, also stripping repeated factory prefixes if found).
 	 * @param name the name of the bean

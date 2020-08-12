@@ -140,6 +140,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 	}
 
 
+	// 只能获取单个resource实例
 	@Override
 	public Resource getResource(String location) {
 		Assert.notNull(location, "Location must not be null");
@@ -164,9 +165,9 @@ public class DefaultResourceLoader implements ResourceLoader {
 		}
 		else {
 			try {
-				// 根据是否为文件 URL ，是则返回 FileUrlResource 类型的资源，否则返回 UrlResource 类型的资源
 				// Try to parse the location as a URL...
 				URL url = new URL(location);
+				// 根据是否为文件 URL ，是则返回 FileUrlResource 类型的资源，否则返回 UrlResource 类型的资源
 				return (ResourceUtils.isFileURL(url) ? new FileUrlResource(url) : new UrlResource(url));
 			}
 			catch (MalformedURLException ex) {

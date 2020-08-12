@@ -60,15 +60,20 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 	@Override
 	@Nullable
 	public final BeanDefinition parse(Element element, ParserContext parserContext) {
+		// 内部解析 该方法是抽象方法[可客制化实现对应的 doParse 方法进行解析处理]
+		// 往往调用 AbstractSingleBeanDefinitionParser#parseInternal
+		// 自定义 parser 往往继承 AbstractSingleBeanDefinitionParser, 通过该 parseInternal 调用自定义实现 doParse 方法
 		AbstractBeanDefinition definition = parseInternal(element, parserContext);
 		if (definition != null && !parserContext.isNested()) {
 			try {
+				// id属性
 				String id = resolveId(element, definition, parserContext);
 				if (!StringUtils.hasText(id)) {
 					parserContext.getReaderContext().error(
 							"Id is required for element '" + parserContext.getDelegate().getLocalName(element)
 									+ "' when used as a top-level tag", element);
 				}
+				// 别名属性
 				String[] aliases = null;
 				if (shouldParseNameAsAliases()) {
 					String name = element.getAttribute(NAME_ATTRIBUTE);

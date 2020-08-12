@@ -16,18 +16,8 @@
 
 package org.springframework.beans.factory.xml;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
@@ -38,6 +28,15 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Default implementation of the {@link BeanDefinitionDocumentReader} interface that
@@ -130,7 +129,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// 负责解析BeanDefinition
 		this.delegate = createDelegate(getReaderContext(), root, parent);
 
-		// 检查 <beans />
+		// 检查 默认名称空间 <beans />
 		// 检查该项配置<beans profile="local,dev"></beans>
 		if (this.delegate.isDefaultNamespace(root)) {
 			// 环境配置 profile
@@ -185,7 +184,8 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				if (node instanceof Element) {
 					Element ele = (Element) node;
 					if (delegate.isDefaultNamespace(ele)) {
-						// 检查是否是以下命名空间
+						// 检查是否是以下命名空间-默认名称空间下
+						// <beans > <beans profile = "local,sit" ></beans > <bean ></bean > </beans >
 						// import
 						// alias
 						// bean
@@ -194,6 +194,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 					}
 					else {
 						// 上述外的其他情况-自定义注解
+						// 客制化 eg. <dubbo:protocol cluster="xxx" />
 						delegate.parseCustomElement(ele);
 					}
 				}
@@ -201,6 +202,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		}
 		else {
 			// 自定义解析
+			// 客制化 eg. <dubbo:protocol cluster="xxx" />
 			delegate.parseCustomElement(root);
 		}
 	}
@@ -338,12 +340,16 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 */
 	// 进行 bean 元素解析
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
-		// bean元素解析
+		// bean元素解析-默认标签解析
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
+			// 默认标签下的客制化标签解析: <bean></bean>中自定义的标签
+			// 最终放入到 BeanDefinition 中 setAttribute
+			// 获取客制化的 NameSpaceHandler 进行自定义标签解析
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.
+				// bean 定义注册, 放入到 beanFactory#beanDefinitionMap 属性中
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
 			catch (BeanDefinitionStoreException ex) {
