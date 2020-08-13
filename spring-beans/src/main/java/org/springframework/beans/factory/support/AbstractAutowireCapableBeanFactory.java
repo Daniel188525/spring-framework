@@ -565,6 +565,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		if (instanceWrapper == null) {
 			// 使用合适的实例化策略来创建新的实例：工厂方法、构造函数自动注入、简单初始化
+			// 主要是将 BeanDefinition 转换为 org.springframework.beans.BeanWrapper 对象
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		// 包装的实例对象
