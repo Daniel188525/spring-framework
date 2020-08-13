@@ -45,7 +45,15 @@ public class FactoryBeanTests {
 	private static final Resource WITH_AUTOWIRING_CONTEXT = qualifiedResource(CLASS, "withAutowiring.xml");
 	private static final Resource ABSTRACT_CONTEXT = qualifiedResource(CLASS, "abstract.xml");
 	private static final Resource CIRCULAR_CONTEXT = qualifiedResource(CLASS, "circular.xml");
+	private static final Resource MY_FACTORY_BEAN_CONTEXT = qualifiedResource(CLASS, "test-factory-bean.xml");
 
+	@Test
+	public void testMyFactoryBeanLoad() {
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		new XmlBeanDefinitionReader(factory).loadBeanDefinitions(MY_FACTORY_BEAN_CONTEXT);
+
+		assertNotNull(factory.getBean("factoryBean").toString());
+	}
 
 	@Test
 	public void testFactoryBeanReturnsNull() throws Exception {
