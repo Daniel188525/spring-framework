@@ -254,7 +254,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Spring 在创建 Bean 的时候并不是等 Bean 完全创建完成后才会将 Bean 添加至缓存中，
 		// 而是不等 Bean 创建完成就会将创建 Bean 的 ObjectFactory 提早加入到缓存中，
 		// 这样一旦下一个 Bean 创建的时候需要依赖 bean 时则直接使用 ObjectFactroy
-		Object sharedInstance = getSingleton(beanName);
+		Object sharedInstance = getSingleton(beanName); // 只是单纯的查询缓存,不会进行 createBean 操作
 		if (sharedInstance != null && args == null) {
 			// 找到单例 bean instance时
 			if (logger.isTraceEnabled()) {
@@ -288,6 +288,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			// Check if bean definition exists in this factory.
 			// 如果容器中没有找到，则从父类容器中加载
+			// 递归调用getBean方法
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -298,13 +299,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 				else if (args != null) {
 					// Delegation to parent with explicit args.
+					// name + 参数列表
 					return (T) parentBeanFactory.getBean(nameToLookup, args);
 				}
 				else if (requiredType != null) {
 					// No args -> delegate to standard getBean method.
+					// name + type
 					return parentBeanFactory.getBean(nameToLookup, requiredType);
 				}
 				else {
+					// 最终使用getBean(String name)
 					return (T) parentBeanFactory.getBean(nameToLookup);
 				}
 			}
@@ -321,7 +325,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
-				// 优先处理所依赖的 bean
+				// 优先处理所依赖的 bean [xml 中 depends-on=""]
 				// 在 Spring 的加载顺序中，在初始化某一个 Bean 的时候，首先会初始化这个 Bean 的依赖
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
@@ -348,6 +352,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// 以下是各个 scope bean 创建 instance 的过程
 				// Create bean instance.
 				if (mbd.isSingleton()) { // 单例模式
+					// 单例 Bean 的初始化过程
+					// 优先从 singletonObjects 缓存中获取, 若都没有则进行 createBean 操作 [ 通过调用传入的 FactoryBean#getObject() ]
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							// 实际调用该方法创建 bean instance
@@ -361,6 +367,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							throw ex;
 						}
 					});
+					// 同上的再处理,主要是针对于 FactoryBean 调用其 getObject 方法创建对应的 bean instance
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 

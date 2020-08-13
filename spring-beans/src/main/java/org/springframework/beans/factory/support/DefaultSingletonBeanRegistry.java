@@ -179,6 +179,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		Assert.notNull(singletonFactory, "Singleton factory must not be null");
 		synchronized (this.singletonObjects) {
 			if (!this.singletonObjects.containsKey(beanName)) {
+				// 设置三级缓存, 可以理解为[我想要个零件-但是spring扔给你一个工厂,想用就自己去生产吧]
 				this.singletonFactories.put(beanName, singletonFactory);
 				this.earlySingletonObjects.remove(beanName);
 				this.registeredSingletons.add(beanName);
@@ -219,6 +220,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (singletonFactory != null) {
 						singletonObject = singletonFactory.getObject();
 						// 缓存转移到 earlySingletonObjects 中[由 singletonFactories 提升到 earlySingletonObjects]
+						// 从三级缓存转移到二级缓存中 [工厂-->半成品]
 						this.earlySingletonObjects.put(beanName, singletonObject);
 						this.singletonFactories.remove(beanName);
 					}
@@ -291,6 +293,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				if (newSingleton) {
 					// 创建完成后 放入第一级缓存中, 并从第二级 第三级缓存中删除该 instance
 					// 并 添加到 registeredSingletons 集合中
+					// 把 成品 放入到一级缓存中
 					addSingleton(beanName, singletonObject);
 				}
 			}
