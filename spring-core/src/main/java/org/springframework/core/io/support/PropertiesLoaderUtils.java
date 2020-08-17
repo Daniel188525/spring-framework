@@ -87,6 +87,7 @@ public abstract class PropertiesLoaderUtils {
 		Reader reader = null;
 		try {
 			String filename = resource.getResource().getFilename();
+			// XML 文件
 			if (filename != null && filename.endsWith(XML_FILE_EXTENSION)) {
 				stream = resource.getInputStream();
 				persister.loadFromXml(props, stream);

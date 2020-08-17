@@ -31,6 +31,9 @@ import org.springframework.util.DefaultPropertiesPersister;
 import org.springframework.util.PropertiesPersister;
 
 /**
+ * 属性加载帮助类，提供从properties文件中读取配置信息的能力，
+ * 该类的属性 locations 指定需要加载的文件所在的路径, e.g. classpath:config.properties
+ *
  * Base class for JavaBean-style components that need to load properties
  * from one or more resources. Supports local properties as well, with
  * configurable overriding.
@@ -48,11 +51,21 @@ public abstract class PropertiesLoaderSupport {
 
 	protected boolean localOverride = false;
 
+	/**
+	 * 配置资源加载路径
+	 * e.g. classpath:config.properties
+	 */
 	@Nullable
 	private Resource[] locations;
 
+	/**
+	 * 是否忽略未找到的资源
+	 */
 	private boolean ignoreResourceNotFound = false;
 
+	/**
+	 * 编码
+	 */
 	@Nullable
 	private String fileEncoding;
 
@@ -140,6 +153,7 @@ public abstract class PropertiesLoaderSupport {
 
 
 	/**
+	 * 返回一个合并的属性实例 Properties , 其中包含在这个FactoryBean上加载的属性和设置的属性
 	 * Return a merged Properties instance containing both the
 	 * loaded properties and properties set on this FactoryBean.
 	 */
@@ -148,6 +162,7 @@ public abstract class PropertiesLoaderSupport {
 
 		if (this.localOverride) {
 			// Load properties from file upfront, to let local properties override.
+			// 加载属性到给定的属性实例中
 			loadProperties(result);
 		}
 
@@ -166,6 +181,7 @@ public abstract class PropertiesLoaderSupport {
 	}
 
 	/**
+	 * 加载属性到给定的属性实例中.
 	 * Load properties into the given instance.
 	 * @param props the Properties instance to load into
 	 * @throws IOException in case of I/O errors
@@ -173,11 +189,13 @@ public abstract class PropertiesLoaderSupport {
 	 */
 	protected void loadProperties(Properties props) throws IOException {
 		if (this.locations != null) {
+			//遍历配置的 property 文件, 填充到属性实例中
 			for (Resource location : this.locations) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Loading properties file from " + location);
 				}
 				try {
+					// 填充到 props
 					PropertiesLoaderUtils.fillProperties(
 							props, new EncodedResource(location, this.fileEncoding), this.propertiesPersister);
 				}
