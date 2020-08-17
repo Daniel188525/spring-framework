@@ -44,6 +44,7 @@ public interface BeanPostProcessor {
 
 	/**
 	 * 实例化之后&调用init方法之前
+	 * Object bean: 是已经实例化了的bean, 但还未初始化
 	 * Apply this BeanPostProcessor to the given new bean instance <i>before</i> any bean
 	 * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
 	 * or a custom init-method). The bean will already be populated with property values.
@@ -63,6 +64,7 @@ public interface BeanPostProcessor {
 
 	/**
 	 * 实例化之后&调用init方法之后
+	 * Object bean: 是已经实例化并且初始化后的bean
 	 * Apply this BeanPostProcessor to the given new bean instance <i>after</i> any bean
 	 * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
 	 * or a custom init-method). The bean will already be populated with property values.

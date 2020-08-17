@@ -130,7 +130,6 @@ public class FactoryBeanTests {
 		assertEquals(1, counter.getCount("bean2"));
 	}
 
-
 	public static class NullReturningFactoryBean implements FactoryBean<Object> {
 
 		@Override
@@ -339,5 +338,4 @@ public class FactoryBeanTests {
 			this.impl1 = impl1;
 		}
 	}
-
 }

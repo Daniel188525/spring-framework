@@ -174,10 +174,14 @@ public class GenericConversionService implements ConfigurableConversionService {
 		return (T) convert(source, TypeDescriptor.forObject(source), TypeDescriptor.valueOf(targetType));
 	}
 
+	// 原对象 Object source
+	// 原类型描述器 TypeDescriptor sourceType
+	// 目标类型描述器 TypeDescriptor targetType
 	@Override
 	@Nullable
 	public Object convert(@Nullable Object source, @Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
 		Assert.notNull(targetType, "Target type to convert to cannot be null");
+		// 原类型为空,直接处理结果
 		if (sourceType == null) {
 			Assert.isTrue(source == null, "Source must be [null] if source type == [null]");
 			return handleResult(null, targetType, convertNullSource(null, targetType));
@@ -186,11 +190,14 @@ public class GenericConversionService implements ConfigurableConversionService {
 			throw new IllegalArgumentException("Source to convert from must be an instance of [" +
 					sourceType + "]; instead it was a [" + source.getClass().getName() + "]");
 		}
+		// 获得对应的 GenericConverter 对象
 		GenericConverter converter = getConverter(sourceType, targetType);
 		if (converter != null) {
+			// 执行转换
 			Object result = ConversionUtils.invokeConverter(converter, source, sourceType, targetType);
 			return handleResult(sourceType, targetType, result);
 		}
+		// 未找到 converter 时
 		return handleConverterNotFound(source, sourceType, targetType);
 	}
 
@@ -251,14 +258,17 @@ public class GenericConversionService implements ConfigurableConversionService {
 	 */
 	@Nullable
 	protected GenericConverter getConverter(TypeDescriptor sourceType, TypeDescriptor targetType) {
+		// 创建缓存key
 		ConverterCacheKey key = new ConverterCacheKey(sourceType, targetType);
+		// 从 converterCache 缓存中，获得 GenericConverter 对象 converter
 		GenericConverter converter = this.converterCache.get(key);
 		if (converter != null) {
 			return (converter != NO_MATCH ? converter : null);
 		}
-
+		// 如果获取不到，则从 converters 中查找
 		converter = this.converters.find(sourceType, targetType);
 		if (converter == null) {
+			// 设置默认
 			converter = getDefaultConverter(sourceType, targetType);
 		}
 

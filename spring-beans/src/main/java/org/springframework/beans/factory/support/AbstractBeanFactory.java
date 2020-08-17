@@ -929,6 +929,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	/**
+	 * 返回所有的 beanPostProcessors 集合
+	 * 注意: BeanFactory#getBean(...)中没有自动注入beanPostProcessors的流程,所以需手动调用 #addBeanPostProcessor(BeanPostProcessor beanPostProcessor) 方法
+	 * 但是 ApplicationContext 不需要手动，因为 ApplicationContext 会自动检测并完成注册 [#registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory)]
 	 * Return the list of BeanPostProcessors that will get applied
 	 * to beans created with this factory.
 	 */
@@ -1310,11 +1313,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// Check with full lock now in order to enforce the same merged instance.
 			if (containingBd == null) {
 				mbd = this.mergedBeanDefinitions.get(beanName);
+				// 这里为什么不直接 return
 			}
 
 			if (mbd == null) {
 				if (bd.getParentName() == null) {
-					// 不存在父类 beanName
+					// 不存在父类 beanName 直接 clone 返回
 					// Use copy of given root bean definition.
 					if (bd instanceof RootBeanDefinition) {
 						mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();
@@ -1328,12 +1332,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// 子类 bean 定义需要合并到父类 bean 定义中
 					// Child bean definition: needs to be merged with parent.
 					BeanDefinition pbd;
+					// 获取父类 bean definition
 					try {
 						String parentBeanName = transformedBeanName(bd.getParentName());
+						// TODO 什么情况下 当前 beanName 与其父类 beanName 相等 ???
 						if (!beanName.equals(parentBeanName)) {
+							// 递归获取父类 bean definition
 							pbd = getMergedBeanDefinition(parentBeanName);
 						}
 						else {
+							// 从父类容器中加载 bean definition
+							// 父类容器必须实现 ConfigurableBeanFactory , 否则抛出 NoSuchBeanDefinitionException
 							BeanFactory parent = getParentBeanFactory();
 							if (parent instanceof ConfigurableBeanFactory) {
 								pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);
@@ -1351,6 +1360,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 					// Deep copy with overridden values.
 					mbd = new RootBeanDefinition(pbd);
+					// 子类 bean definition 覆盖父类的属性 [Override]
+					// 添加子类中的属性 [合并到pbd中]
 					mbd.overrideFrom(bd);
 				}
 

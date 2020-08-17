@@ -124,9 +124,17 @@ public class PropertyPlaceholderHelper {
 		return parseStringValue(value, placeholderResolver, null);
 	}
 
+	/**
+	 * 占位符替换的核心代码
+	 * @param value
+	 * @param placeholderResolver
+	 * @param visitedPlaceholders
+	 * @return
+	 */
 	protected String parseStringValue(
 			String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders) {
 
+		// 获取前缀 "${" 的索引位置
 		int startIndex = value.indexOf(this.placeholderPrefix);
 		if (startIndex == -1) {
 			return value;
@@ -134,8 +142,11 @@ public class PropertyPlaceholderHelper {
 
 		StringBuilder result = new StringBuilder(value);
 		while (startIndex != -1) {
+			// 获取 后缀 "}" 的索引位置
 			int endIndex = findPlaceholderEndIndex(result, startIndex);
 			if (endIndex != -1) {
+				// 截取 "${" 和 "}" 中间的内容，这也就是我们在配置文件中对应的值
+				// e.g. ${jdbc.url} --> jdbc.url
 				String placeholder = result.substring(startIndex + this.placeholderPrefix.length(), endIndex);
 				String originalPlaceholder = placeholder;
 				if (visitedPlaceholders == null) {
@@ -146,23 +157,35 @@ public class PropertyPlaceholderHelper {
 							"Circular placeholder reference '" + originalPlaceholder + "' in property definitions");
 				}
 				// Recursive invocation, parsing placeholders contained in the placeholder key.
+				// 解析占位符键中包含的占位符，真正的值
+				// 递归处理-防止套娃,以适配嵌套占位符的出现, 直至解析出不包含占位符的真的KEY值 e.g. ${jdbc.url} --> jdbc.url
 				placeholder = parseStringValue(placeholder, placeholderResolver, visitedPlaceholders);
 				// Now obtain the value for the fully resolved key...
+				// 从 Properties 中获取 placeHolder key 对应的真实值 propVal
 				String propVal = placeholderResolver.resolvePlaceholder(placeholder);
+				// 未找到与之对应的真实值 并且存在 多值分隔符':'
+				// e.g. jdbc.url:xxx.yyy.com:3306/test
+				// ${hello:defaultValue}
 				if (propVal == null && this.valueSeparator != null) {
 					int separatorIndex = placeholder.indexOf(this.valueSeparator);
 					if (separatorIndex != -1) {
+						// 获取 : 前面部分 actualPlaceholder [ e.g. jdbc.url ]
 						String actualPlaceholder = placeholder.substring(0, separatorIndex);
+						// 获取 : 后面部分 defaultValue [e.g. xxx.yyy.com:3306/test]
 						String defaultValue = placeholder.substring(separatorIndex + this.valueSeparator.length());
+						// 从 Properties 中获取 placeHolder key 对应的真实值 propVal
 						propVal = placeholderResolver.resolvePlaceholder(actualPlaceholder);
 						if (propVal == null) {
+							// 未找到对应的真实值时,设置为默认值
 							propVal = defaultValue;
 						}
 					}
 				}
+				// 找到真实值
 				if (propVal != null) {
 					// Recursive invocation, parsing placeholders contained in the
 					// previously resolved placeholder value.
+					// 递归调用 防止套娃
 					propVal = parseStringValue(propVal, placeholderResolver, visitedPlaceholders);
 					result.replace(startIndex, endIndex + this.placeholderSuffix.length(), propVal);
 					if (logger.isTraceEnabled()) {
@@ -170,6 +193,7 @@ public class PropertyPlaceholderHelper {
 					}
 					startIndex = result.indexOf(this.placeholderPrefix, startIndex + propVal.length());
 				}
+				// 忽略值
 				else if (this.ignoreUnresolvablePlaceholders) {
 					// Proceed with unprocessed value.
 					startIndex = result.indexOf(this.placeholderPrefix, endIndex + this.placeholderSuffix.length());
@@ -184,6 +208,7 @@ public class PropertyPlaceholderHelper {
 				startIndex = -1;
 			}
 		}
+		// 返回替换后的真实值
 		return result.toString();
 	}
 

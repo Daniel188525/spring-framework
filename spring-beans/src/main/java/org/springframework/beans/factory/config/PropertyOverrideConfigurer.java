@@ -69,7 +69,9 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 	 */
 	public static final String DEFAULT_BEAN_NAME_SEPARATOR = ".";
 
-
+	/**
+	 * bean名称分隔符 student.name
+	 */
 	private String beanNameSeparator = DEFAULT_BEAN_NAME_SEPARATOR;
 
 	private boolean ignoreInvalidKeys = false;
@@ -103,9 +105,16 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 	protected void processProperties(ConfigurableListableBeanFactory beanFactory, Properties props)
 			throws BeansException {
 
+		// 迭代配置文件中的KEY值
+		// e.g. student is bean-name, name & age are property-name.
+		// student.name = zhangsan-override
+		// student.age = 15
 		for (Enumeration<?> names = props.propertyNames(); names.hasMoreElements();) {
 			String key = (String) names.nextElement();
 			try {
+				// e.g. student.name = zhangsan-override
+				// key = student.name
+				// value = zhangsan-override [ props.getProperty(key) ]
 				processKey(beanFactory, key, props.getProperty(key));
 			}
 			catch (BeansException ex) {
@@ -134,6 +143,7 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 		String beanName = key.substring(0, separatorIndex);
 		String beanProperty = key.substring(separatorIndex + 1);
 		this.beanNames.add(beanName);
+		// 替换 bean definition 中的属性值 key-value
 		applyPropertyValue(factory, beanName, beanProperty, value);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Property '" + key + "' set to value [" + value + "]");
@@ -145,13 +155,14 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 	 */
 	protected void applyPropertyValue(
 			ConfigurableListableBeanFactory factory, String beanName, String property, String value) {
-
+		// 获取 bean definition
 		BeanDefinition bd = factory.getBeanDefinition(beanName);
 		BeanDefinition bdToUse = bd;
 		while (bd != null) {
 			bdToUse = bd;
 			bd = bd.getOriginatingBeanDefinition();
 		}
+		// 设置 PropertyValue 到 BeanDefinition 中
 		PropertyValue pv = new PropertyValue(property, value);
 		pv.setOptional(this.ignoreInvalidKeys);
 		bdToUse.getPropertyValues().addPropertyValue(pv);

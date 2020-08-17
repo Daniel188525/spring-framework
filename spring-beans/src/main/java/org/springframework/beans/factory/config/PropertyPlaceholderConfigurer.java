@@ -202,6 +202,7 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 
 
 	/**
+	 * 对容器中加载过的 beanDefinition 中的占位符进行替换, 替换为 properties 中的值
 	 * Visit each bean definition in the given bean factory and attempt to replace ${...} property
 	 * placeholders with values from the given properties.
 	 */
@@ -209,18 +210,29 @@ public class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport 
 	protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess, Properties props)
 			throws BeansException {
 
+		// 字符值解析器 [ PlaceholderResolvingStringValueResolver ]
+		// helper: 持有占位符的前缀、后缀、多值的分隔符，负责把占位符的字符串去除前缀、后缀，对于字符串的替换，委托给PropertyPlaceholderConfigurerResolver类处理
+		// resolver: 该类委托给 PropertyPlaceholderConfigurer#resolvePlaceholder(java.lang.String, java.util.Properties, int) 处理
 		StringValueResolver valueResolver = new PlaceholderResolvingStringValueResolver(props);
+		// 真实处理 [进行占位符替换操作]
 		doProcessProperties(beanFactoryToProcess, valueResolver);
 	}
 
 
 	private class PlaceholderResolvingStringValueResolver implements StringValueResolver {
 
+		/**
+		 * Placeholder占位符工具类
+		 */
 		private final PropertyPlaceholderHelper helper;
 
+		/**
+		 * 一个用于解析字符串中包含占位符的替换值的策略接口 [占位符解析器]
+		 */
 		private final PlaceholderResolver resolver;
 
 		public PlaceholderResolvingStringValueResolver(Properties props) {
+			// 前缀 后缀 多值分隔符
 			this.helper = new PropertyPlaceholderHelper(
 					placeholderPrefix, placeholderSuffix, valueSeparator, ignoreUnresolvablePlaceholders);
 			this.resolver = new PropertyPlaceholderConfigurerResolver(props);
