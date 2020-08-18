@@ -49,6 +49,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	/**
 	 * 实例化之前 apply this method before create instance
 	 * 可在这里进行 proxy bean instead of the target bean
+	 *
 	 * Apply this BeanPostProcessor <i>before the target bean gets instantiated</i>.
 	 * The returned bean object may be a proxy to use instead of the target bean,
 	 * effectively suppressing default instantiation of the target bean.
@@ -98,6 +99,9 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	}
 
 	/**
+	 * 提供给已经实例化的对象一种可以自定义完成对象pv属性的修改操作[是在属性注入bean instance之前进行修改]
+	 * 之后会执行 AbstractAutowireCapableBeanFactory#applyPropertyValues 方法把属性值注入到实例中
+	 *
 	 * Post-process the given property values before the factory applies them
 	 * to the given bean, without any need for property descriptors.
 	 * <p>Implementations should return {@code null} (the default) if they provide a custom
@@ -123,6 +127,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	}
 
 	/**
+	 * 不推荐使用 [建议使用 postProcessProperties 方法]
+	 *
 	 * Post-process the given property values before the factory applies them
 	 * to the given bean. Allows for checking whether all dependencies have been
 	 * satisfied, for example based on a "Required" annotation on bean property setters.

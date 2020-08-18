@@ -426,7 +426,7 @@ public class BeanDefinitionParserDelegate {
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
-		// 优先ID作为beanName
+		// 优先id作为beanName
 		String beanName = id;
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			// 若ID为空,优先设置第一个别名为beanName
@@ -521,12 +521,14 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		try {
+			// 创建 bean definition [根据 className & parentClassName]
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
+			// 解析属性 scope abstract lazy-init autowire depends-on init-method等
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
-			// 元数据
+			// 元数据 meta
 			parseMetaElements(ele, bd);
 
 			// 以下两个标签很少使用lookup-ovveride  replaced-method
@@ -537,11 +539,11 @@ public class BeanDefinitionParserDelegate {
 			// 可以在运行时调用新的方法替换现有的方法，还能动态的更新原有方法的逻辑
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
-			// 构造参数
+			// 构造参数 constructor-arg
 			parseConstructorArgElements(ele, bd);
-			// property属性
+			// property属性 property
 			parsePropertyElements(ele, bd);
-			// qualifier属性
+			// qualifier属性 qualifier
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());
@@ -1399,16 +1401,20 @@ public class BeanDefinitionParserDelegate {
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
 		// 获取 namespaceUri
+		// e.g. spring非默认 http\://www.springframework.org/schema/aop
+		// e.g. 自定义 http:\//schema.alipay.com/sofa/schema/slite
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
 		}
 		// 根据 namespaceUri 获取相应的 Handler
+		// spring.handlers文件: key-value key=namespaceUri value=NamespaceHandler
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+		// 调用非缺省名称空间 handler e.g. AopNamespaceHandler
 		// 调用自定义的 Handler 处理[继承 NamespaceHandlerSupport 类]
 		// 自定义 handler 在初始化时需要注册自定义的 parser [继承 AbstractSingleBeanDefinitionParser --> 继承 AbstractBeanDefinitionParser ]
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));

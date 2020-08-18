@@ -96,15 +96,32 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	private ParseState parseState = new ParseState();
 
 
+	// 以下面配置为例
+	// <aop:config proxy-target-class="true">
+	//     <aop:aspect id="time" ref="timeHandler">  切面
+	//         <aop:pointcut id="addAllMethod" expression="execution(* org.xrq.action.aop.Dao.*(..))" />  切入点[在哪儿切入]
+	//         <aop:before method="printTime" pointcut-ref="addAllMethod" />  通知 [在什么时机做什么-增强]
+	//         <aop:after method="printTime" pointcut-ref="addAllMethod" />  通知 [在什么时机做什么-增强]
+	//     </aop:aspect>
+	// </aop:config>
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
+		// 包含一个或多个嵌套的{@link ComponentDefinition}实例，并将它们聚合到一个指定名称的组件组中
+		// 同一个组 name = elementTagName[aop:config], 包含多个 ComponentDefinition 实例
+		// 实现 ComponentDefinition 接口的类有 BeanComponentDefinition & AdvisorComponentDefinition & PointcutComponentDefinition
 		CompositeComponentDefinition compositeDef =
 				new CompositeComponentDefinition(element.getTagName(), parserContext.extractSource(element));
+		// 放入双端队列
 		parserContext.pushContainingComponent(compositeDef);
 
+		// 搞事情的一个方法
+		// 向容器中注册 AspectJAwareAdvisorAutoProxyCreator beanDefinition
+		// [name=org.springframework.aop.config.internalAutoProxyCreator, beanClass=AspectJAwareAdvisorAutoProxyCreator.class]
+		// 只是注册了下bean definition, 还没开始骚起来
 		configureAutoProxyCreator(parserContext, element);
 
+		// 子节点信息 <aop:aspect>
 		List<Element> childElts = DomUtils.getChildElements(element);
 		for (Element elt: childElts) {
 			String localName = parserContext.getDelegate().getLocalName(elt);
@@ -115,6 +132,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 				parseAdvisor(elt, parserContext);
 			}
 			else if (ASPECT.equals(localName)) {
+				// 解析节点 aop:aspect
 				parseAspect(elt, parserContext);
 			}
 		}
@@ -204,18 +222,24 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			List<BeanDefinition> beanDefinitions = new ArrayList<>();
 			List<BeanReference> beanReferences = new ArrayList<>();
 
+			// declare-parents
 			List<Element> declareParents = DomUtils.getChildElementsByTagName(aspectElement, DECLARE_PARENTS);
 			for (int i = METHOD_INDEX; i < declareParents.size(); i++) {
 				Element declareParentsElement = declareParents.get(i);
 				beanDefinitions.add(parseDeclareParents(declareParentsElement, parserContext));
 			}
 
+			// 优先解析通知节点-五个
+			// <aop:before> & <aop:after> & <aop:after-returning> & <aop:after-throwing> & <aop:around>
 			// We have to parse "advice" and all the advice kinds in one loop, to get the
 			// ordering semantics right.
 			NodeList nodeList = aspectElement.getChildNodes();
 			boolean adviceFoundAlready = false;
 			for (int i = 0; i < nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
+				// 是否是通知节点 [这里不处理 <aop:pointcut> 节点]
+				// 只用来处理<aop:aspect>标签下的五个标签 [通知标签]
+				// <aop:before>、<aop:after>、<aop:after-returning>、<aop:after-throwing method="">、<aop:around method="">
 				if (isAdviceNode(node, parserContext)) {
 					if (!adviceFoundAlready) {
 						adviceFoundAlready = true;
@@ -227,6 +251,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 						}
 						beanReferences.add(new RuntimeBeanReference(aspectName));
 					}
+					// 解析通知节点,创建对应的 bean definition
 					AbstractBeanDefinition advisorDefinition = parseAdvice(
 							aspectName, i, aspectElement, (Element) node, parserContext, beanDefinitions, beanReferences);
 					beanDefinitions.add(advisorDefinition);
@@ -237,6 +262,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 					aspectElement, aspectId, beanDefinitions, beanReferences, parserContext);
 			parserContext.pushContainingComponent(aspectComponentDefinition);
 
+			// 然后解析 <aop:pointcut> 节点
 			List<Element> pointcuts = DomUtils.getChildElementsByTagName(aspectElement, POINTCUT);
 			for (Element pointcutElement : pointcuts) {
 				parsePointcut(pointcutElement, parserContext);
@@ -321,17 +347,23 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 
 			// create the method factory bean
 			RootBeanDefinition methodDefinition = new RootBeanDefinition(MethodLocatingFactoryBean.class);
+			// aspect ref bean name [目标bean的beanName, 在实例化时进行增强操作]
 			methodDefinition.getPropertyValues().add("targetBeanName", aspectName);
+			// 添加属性: 通知方法名称 [实例化targetBean时进行增强-回调各种通知方法]
 			methodDefinition.getPropertyValues().add("methodName", adviceElement.getAttribute("method"));
 			methodDefinition.setSynthetic(true);
 
-			// create instance factory definition
+			// create instance factory definition [实例工厂定义]
+			// SimpleBeanFactoryAwareAspectInstanceFactory#getAspectInstance 获取 bean instance
 			RootBeanDefinition aspectFactoryDef =
 					new RootBeanDefinition(SimpleBeanFactoryAwareAspectInstanceFactory.class);
 			aspectFactoryDef.getPropertyValues().add("aspectBeanName", aspectName);
 			aspectFactoryDef.setSynthetic(true);
 
 			// register the pointcut
+			// <aop:before method="xxxx" pointcut-ref="addAllMethod" pointcut="" arg-names="" />
+			// <aop:after method="xxxx" pointcut-ref="addAllMethod" pointcut="" arg-names="" />
+			// 创建五个标签的 bean definition
 			AbstractBeanDefinition adviceDef = createAdviceDefinition(
 					adviceElement, parserContext, aspectName, order, methodDefinition, aspectFactoryDef,
 					beanDefinitions, beanReferences);
@@ -356,6 +388,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
+	 * <aop:before method="xxxx" pointcut-ref="addAllMethod" pointcut="" arg-names="" />
+	 *
 	 * Creates the RootBeanDefinition for a POJO advice bean. Also causes pointcut
 	 * parsing to occur so that the pointcut may be associate with the advice bean.
 	 * This same pointcut is also configured as the pointcut for the enclosing
@@ -366,9 +400,16 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			RootBeanDefinition methodDef, RootBeanDefinition aspectFactoryDef,
 			List<BeanDefinition> beanDefinitions, List<BeanReference> beanReferences) {
 
+		// 创建Bean定义，必然该Bean定义中要对应一个具体的Class，不同的切入方式对应不同的Class
+		// before --> AspectJMethodBeforeAdvice
+		// after --> AspectJAfterAdvice
+		// after-returning --> AspectJAfterReturningAdvice
+		// after-throwing --> AspectJAfterThrowingAdvice
+		// around --> AspectJAroundAdvice
 		RootBeanDefinition adviceDefinition = new RootBeanDefinition(getAdviceClass(adviceElement, parserContext));
 		adviceDefinition.setSource(parserContext.extractSource(adviceElement));
 
+		// 添加属性
 		adviceDefinition.getPropertyValues().add(ASPECT_NAME_PROPERTY, aspectName);
 		adviceDefinition.getPropertyValues().add(DECLARATION_ORDER_PROPERTY, order);
 

@@ -120,8 +120,11 @@ public abstract class AopConfigUtils {
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 
+		// 若容器中已经有该名称的 bean definition [org.springframework.aop.config.internalAutoProxyCreator]
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
+			// 获取该 bean definition
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
+			// 若class name不相同, 则判断两者的优先级,优先级高的覆盖低的
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
@@ -132,10 +135,13 @@ public abstract class AopConfigUtils {
 			return null;
 		}
 
+		// 容器中还不存在该 bean definition
+		// new 一个出来
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
 		beanDefinition.setSource(source);
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);
 		beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+		// 向容器注册 bean definition [name=org.springframework.aop.config.internalAutoProxyCreator, beanClass=AspectJAwareAdvisorAutoProxyCreator.class]
 		registry.registerBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME, beanDefinition);
 		return beanDefinition;
 	}

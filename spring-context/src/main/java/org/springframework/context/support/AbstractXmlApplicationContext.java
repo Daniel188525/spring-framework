@@ -89,7 +89,7 @@ public abstract class AbstractXmlApplicationContext extends AbstractRefreshableC
 		// 设置环境变量
 		beanDefinitionReader.setEnvironment(this.getEnvironment());
 
-		// 该容器实现了ResourceLoader接口,用于加载资源
+		// 该容器实现了ResourceLoader接口,可用于加载资源
 		beanDefinitionReader.setResourceLoader(this);
 		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
 
