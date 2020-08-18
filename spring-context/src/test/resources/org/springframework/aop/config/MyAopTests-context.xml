@@ -10,7 +10,7 @@
 
 	<aop:config proxy-target-class="true">
 		<aop:aspect id="time" ref="timeHandler">
-			<aop:pointcut id="addAllMethod" expression="execution(* org.springframework.aop.config.dao.*(..))" />
+			<aop:pointcut id="addAllMethod" expression="execution(* org.springframework.aop.config.dao.TestDao.*(..))" />
 			<aop:before method="printTime" pointcut-ref="addAllMethod" />
 			<aop:after method="printTime" pointcut-ref="addAllMethod" />
 		</aop:aspect>

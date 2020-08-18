@@ -628,6 +628,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 则会递归初始依赖 bean
 			populateBean(beanName, mbd, instanceWrapper);
 			// 调用初始化方法 init-method
+			// 在初始化完成后调用postProcessAfterInitialization方法中 [AOP的增强处理就是通过这个方法进行的]
+			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1938,6 +1940,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
 			// 调用 init 方法后的后置处理器
+			// 在初始化完成后调用postProcessAfterInitialization方法中 [AOP的增强处理就是通过这个方法进行的]
+			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
