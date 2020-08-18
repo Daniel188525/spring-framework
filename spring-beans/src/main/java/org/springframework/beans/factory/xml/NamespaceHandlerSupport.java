@@ -71,6 +71,9 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		// 获取bean定义解析类, 初始化 NameSpaceHandler 后调用其 init 方法注册的 parser
+		// 每一个继承 NamespaceHandlerSupport 的 handler, 都需要重写其init方法,
+		// 该方法中需要指定不同 elementName 对应的 parser e.g. AopNamespaceHandler
+		// 然后放入到一个map中 key=elmentName value=parser
 		BeanDefinitionParser parser = findParserForElement(element, parserContext);
 		// 执行解析过程[ AbstractBeanDefinitionParser#parse 方法]
 		return (parser != null ? parser.parse(element, parserContext) : null);

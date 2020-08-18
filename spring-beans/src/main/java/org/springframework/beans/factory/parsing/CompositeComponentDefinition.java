@@ -23,6 +23,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * 该实现包含一个或多个嵌套的{@link ComponentDefinition}实例，并将它们聚合到一个指定名称的组件组中
  * {@link ComponentDefinition} implementation that holds one or more nested
  * {@link ComponentDefinition} instances, aggregating them into a named group
  * of components.
@@ -66,6 +67,7 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 
 
 	/**
+	 * 将给定的组件定义, 作为一个嵌套元素添加到嵌套组件集合中
 	 * Add the given component as nested element of this composite component.
 	 * @param component the nested component to add
 	 */

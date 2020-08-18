@@ -91,7 +91,9 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 */
 	@Override
 	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
+		// xml reader上下文环境
 		this.readerContext = readerContext;
+		// 获取根节点 进行解析注册
 		doRegisterBeanDefinitions(doc.getDocumentElement());
 	}
 
@@ -114,26 +116,29 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 
 
 	/**
+	 * 当存在嵌套时,会递归调用该方法 e.g. {@code <beans><beans><beans/><beans/>}
 	 * Register each bean definition within the given root {@code <beans/>} element.
 	 */
 	@SuppressWarnings("deprecation")  // for Environment.acceptsProfiles(String...)
 	protected void doRegisterBeanDefinitions(Element root) {
+		// 任何嵌套的 beans 元素将会递归调用该方法
 		// Any nested <beans> elements will cause recursion in this method. In
 		// order to propagate and preserve <beans> default-* attributes correctly,
 		// keep track of the current (parent) delegate, which may be null. Create
 		// the new (child) delegate with a reference to the parent for fallback purposes,
 		// then ultimately reset this.delegate back to its original (parent) reference.
 		// this behavior emulates a stack of delegates without actually necessitating one.
-		BeanDefinitionParserDelegate parent = this.delegate;
+		BeanDefinitionParserDelegate parent = this.delegate; // 递归调用时追踪
 		// 创建 BeanDefinitionParserDelegate 对象[BeanDefinition解析委托类,用于解析BeanDefinition]，并进行设置到 delegate
 		// 负责解析BeanDefinition
 		this.delegate = createDelegate(getReaderContext(), root, parent);
 
-		// 检查 默认名称空间 <beans />
-		// 检查该项配置<beans profile="local,dev"></beans>
+		// 检查 默认名称空间 <beans /> profile属性
+		// 默认的名称空间 http://www.springframework.org/schema/beans
 		if (this.delegate.isDefaultNamespace(root)) {
 			// 环境配置 profile
 			// 处理 profile 属性[可能存在多个配置]
+			// 检查该项配置 {@code <beans profile="local,dev"></beans>}
 			String profileSpec = root.getAttribute(PROFILE_ATTRIBUTE);
 			if (StringUtils.hasText(profileSpec)) {
 				// 使用分隔符切分，可能有多个 profile
@@ -176,13 +181,17 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * @param root the DOM root element of the document
 	 */
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
-		// 默认解析 根节点 <beans>
+		// 默认解析 根节点 <beans> namespace http://www.springframework.org/schema/beans
 		if (delegate.isDefaultNamespace(root)) {
+			// 获取子节点列表
+			// 1.bean节点 import节点 alisa节点 beans节点
+			// 2.其他自定义节点 e.g. <dubbo></dubbo> <sofa></sofa>等
 			NodeList nl = root.getChildNodes();
 			for (int i = 0; i < nl.getLength(); i++) {
 				Node node = nl.item(i);
 				if (node instanceof Element) {
 					Element ele = (Element) node;
+					// 默认的名称空间 <beans> <bean> <import> <alias>
 					if (delegate.isDefaultNamespace(ele)) {
 						// 检查是否是以下命名空间-默认名称空间下
 						// <beans > <beans profile = "local,sit" ></beans > <bean ></bean > </beans >
@@ -193,7 +202,8 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 						parseDefaultElement(ele, delegate);
 					}
 					else {
-						// 上述外的其他情况-自定义注解
+						// 上述外的其他情况- 非默认名称空间 || 自定义注解
+						// 非默认 e.g. <aop:config> 使用XML配置AOP时
 						// 客制化 eg. <dubbo:protocol cluster="xxx" />
 						delegate.parseCustomElement(ele);
 					}
@@ -212,21 +222,28 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// 解析 import 标签
 		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
 			// 解析 import  eg. <import resource="spring-student.xml"/>
+			// 主要是解析出给定路径,然后加载路径对应的资源,最后进行bean定义的注册
 			importBeanDefinitionResource(ele);
 		}
 		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
+			// 别名
 			processAliasRegistration(ele);
 		}
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+			// bean节点
 			processBeanDefinition(ele, delegate);
 		}
 		else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
-			// recurse
+			// beans 节点递归调用
 			doRegisterBeanDefinitions(ele);
 		}
 	}
 
 	/**
+	 * 解析 import 节点,从跟进路径的 resource 加载 bean 定义
+	 * 若路径中存在占位符,则使用 PropertySourcesPropertyResolver#resolveRequiredPlaceholders 解析占位符并进行替换
+	 * 判断路径是相对路劲还是决定路径,根据路径的类别去加载 resources
+	 *
 	 * Parse an "import" element and load the bean definitions
 	 * from the given resource into the bean factory.
 	 */
@@ -239,11 +256,14 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		}
 
 		// Resolve system properties: e.g. "${user.dir}"
+		// 若resource路径中包含占位符则替换占位符
+		// PropertySourcesPropertyResolver#resolveRequiredPlaceholders 解析占位符并进行替换
 		location = getReaderContext().getEnvironment().resolveRequiredPlaceholders(location);
 
 		// 实际的resource集合 import了哪些资源
 		Set<Resource> actualResources = new LinkedHashSet<>(4);
 
+		// 下面是根据路径去找 resources [绝对路径 相对路径]
 		// Discover whether the location is an absolute or relative URI
 		// 相对路径还是绝对路径
 		boolean absoluteLocation = false;
@@ -263,6 +283,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			try {
 				// 加载资源注册bean定义
 				// 调用AbstractBeanDefinitionReader.loadBeanDefinitions(java.lang.String, java.util.Set<org.springframework.core.io.Resource>)
+				// 若路径中存在通配符则使用 ResourcePatternResolver 获取可能多个资源
 				int importCount = getReaderContext().getReader().loadBeanDefinitions(location, actualResources);
 				if (logger.isTraceEnabled()) {
 					logger.trace("Imported " + importCount + " bean definitions from URL location [" + location + "]");
@@ -341,6 +362,8 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	// 进行 bean 元素解析
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
 		// bean元素解析-默认标签解析
+		// id & name & class & init-merhod & depends-on & parent &
+		// lazy-init & primary & scope & factory-method & destroy-method 等
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
 			// 默认标签下的客制化标签解析: <bean></bean>中自定义的标签

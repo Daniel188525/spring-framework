@@ -112,8 +112,10 @@ public final class ParserContext {
 	}
 
 	public void registerComponent(ComponentDefinition component) {
+		// 获取队列头部元素
 		CompositeComponentDefinition containingComponent = getContainingComponent();
 		if (containingComponent != null) {
+			// 将给定的组件定义, 作为一个嵌套元素添加到嵌套组件集合中
 			containingComponent.addNestedComponent(component);
 		}
 		else {
