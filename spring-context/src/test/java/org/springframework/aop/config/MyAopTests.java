@@ -2,9 +2,12 @@ package org.springframework.aop.config;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.aop.config.dao.TestDao;
 import org.springframework.aop.config.dao.TestDaoImpl;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.Resource;
 
 import static org.springframework.tests.TestResourceUtils.qualifiedResource;
@@ -24,20 +27,20 @@ public class MyAopTests {
 
 	private XmlBeanDefinitionReader reader;
 
-
-	@Before
-	public void setup() {
-		this.reader = new XmlBeanDefinitionReader(this.beanFactory);
-	}
-
 	@Test
 	public void testAopXmlLoad() {
+		this.reader = new XmlBeanDefinitionReader(this.beanFactory);
 		this.reader.loadBeanDefinitions(CONTEXT);
 	}
 
+	/**
+	 * 在bean初始化完成后调用AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization方法生成TestDao代理类[进行了增强处理]
+	 */
+	@Test
 	public void testAopAdvice() {
-		this.reader.loadBeanDefinitions(CONTEXT);
-		TestDaoImpl daoImpl = beanFactory.getBean("daoImpl", TestDaoImpl.class);
-		daoImpl.select();
+		ApplicationContext ac = new ClassPathXmlApplicationContext("org/springframework/aop/config/MyAopTests-context.xml");
+
+		TestDao dao = (TestDao)ac.getBean("daoImpl");
+		dao.select();
 	}
 }
