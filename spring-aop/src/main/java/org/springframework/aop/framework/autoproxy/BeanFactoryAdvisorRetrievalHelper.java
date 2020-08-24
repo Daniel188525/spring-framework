@@ -59,6 +59,9 @@ public class BeanFactoryAdvisorRetrievalHelper {
 
 
 	/**
+	 * 1.查找容器中所有的实现了 Advisor 接口的 beanDefinition beanNames<br/>
+	 * 2.根据名称及type进行实例化<br/>
+	 *
 	 * Find all eligible Advisor beans in the current bean factory,
 	 * ignoring FactoryBeans and excluding beans that are currently in creation.
 	 * @return the list of {@link org.springframework.aop.Advisor} beans
@@ -66,10 +69,15 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	 */
 	public List<Advisor> findAdvisorBeans() {
 		// Determine list of advisor bean names, if not cached already.
+		// AspectJAwareAdvisorAutoProxyCreator#postProcessBeforeInstantiation执行时
+		// shoudSkip判断时会调用该方法,此时就会更新缓存;
+		// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization执行时
+		// 还在调用该方法,此时直接从缓存中获取即可
 		String[] advisorNames = this.cachedAdvisorBeanNames;
 		if (advisorNames == null) {
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the auto-proxy creator apply to them!
+			// 从容器中所有的实现了 Advisor 接口的 beanDefinition beanNames
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
 			this.cachedAdvisorBeanNames = advisorNames;
@@ -88,6 +96,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 				}
 				else {
 					try {
+						// 实例化对应的 Advisor 类并返回
 						advisors.add(this.beanFactory.getBean(name, Advisor.class));
 					}
 					catch (BeanCreationException ex) {

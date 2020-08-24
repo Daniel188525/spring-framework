@@ -1943,7 +1943,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (mbd == null || !mbd.isSynthetic()) {
 			// 调用 init 方法后的后置处理器
 			// 在初始化完成后调用postProcessAfterInitialization方法中 [AOP的增强处理就是通过这个方法进行的]
-			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization
+			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization [在其抽象类AbstractAutoProxyCreator中]
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 

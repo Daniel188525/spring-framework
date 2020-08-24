@@ -267,6 +267,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return obtainPointcutExpression();
 	}
 
+	// 对类进行匹配[表达式匹配]
 	@Override
 	public boolean matches(Class<?> targetClass) {
 		PointcutExpression pointcutExpression = obtainPointcutExpression();
@@ -289,6 +290,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return false;
 	}
 
+	// 对方法进行过滤匹配
 	@Override
 	public boolean matches(Method method, Class<?> targetClass, boolean hasIntroductions) {
 		obtainPointcutExpression();

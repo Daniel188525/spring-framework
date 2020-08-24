@@ -211,6 +211,10 @@ public abstract class AopUtils {
 	}
 
 	/**
+	 * 这个方法其实就是拿当前Advisor对应的expression做了两层判断:
+	 * 1.目标类必须满足expression的匹配规则
+	 * 2.目标类中的方法必须有至少一个满足expression的匹配规则
+	 *
 	 * Can the given pointcut apply at all on the given class?
 	 * <p>This is an important test as it can be used to optimize
 	 * out a pointcut for a class.
@@ -229,6 +233,7 @@ public abstract class AopUtils {
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
+			// 所有方法都匹配
 			return true;
 		}
 
@@ -306,12 +311,16 @@ public abstract class AopUtils {
 			return candidateAdvisors;
 		}
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
+		// 优先判断 IntroductionAdvisor 类型的是否满足canApply条件判断
+		// canApply 主要是根据配置的 expression 去匹配对应类及其中的方法,匹配上则返回true
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
+
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
+		// 然后判断 PointcutAdvisor 类型的是否满足canApply条件判断
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed
