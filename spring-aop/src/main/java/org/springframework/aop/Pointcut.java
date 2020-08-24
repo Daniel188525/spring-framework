@@ -17,6 +17,10 @@
 package org.springframework.aop;
 
 /**
+ * 切入点: 是Joinpoint的集合,是程序中需要注入Advice的位置集合
+ * 指明在什么条件下才能注入Advice,是个基于表达式的拦截条件.
+ * [通常使用 AspectJ pointcut expression language 来描述去匹配对应的Joinpoint]
+ *
  * Core Spring pointcut abstraction.
  *
  * <p>A pointcut is composed of a {@link ClassFilter} and a {@link MethodMatcher}.
@@ -33,12 +37,16 @@ package org.springframework.aop;
 public interface Pointcut {
 
 	/**
+	 * 通过pointcut表达式对类进行过滤
+	 *
 	 * Return the ClassFilter for this pointcut.
 	 * @return the ClassFilter (never {@code null})
 	 */
 	ClassFilter getClassFilter();
 
 	/**
+	 * 通过pointcut表达式对方法进行过滤
+	 *
 	 * Return the MethodMatcher for this pointcut.
 	 * @return the MethodMatcher (never {@code null})
 	 */
@@ -46,6 +54,8 @@ public interface Pointcut {
 
 
 	/**
+	 * 匹配所有的类及方法，默认返回true
+	 *
 	 * Canonical Pointcut instance that always matches.
 	 */
 	Pointcut TRUE = TruePointcut.INSTANCE;

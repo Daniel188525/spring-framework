@@ -214,8 +214,18 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		return advisorDefinition;
 	}
 
+	// 解析一个切面: 切入点+通知[在什么时机,什么地方,做什么增强]
+	// 以下面配置为例
+	// <aop:config proxy-target-class="true">
+	//     <aop:aspect id="time" ref="timeHandler">  切面
+	//         <aop:pointcut id="addAllMethod" expression="execution(* org.xrq.action.aop.Dao.*(..))" />  切入点[在哪儿切入]
+	//         <aop:before method="printTime" pointcut-ref="addAllMethod" />  通知 [在什么时机做什么-增强]
+	//         <aop:after method="printTime" pointcut-ref="addAllMethod" />  通知 [在什么时机做什么-增强]
+	//     </aop:aspect>
+	// </aop:config>
 	private void parseAspect(Element aspectElement, ParserContext parserContext) {
 		String aspectId = aspectElement.getAttribute(ID);
+		// 具体支持增强的beanName[包含了所有能够增强的方法:打印日志/验证等]
 		String aspectName = aspectElement.getAttribute(REF);
 
 		try {
@@ -232,6 +242,12 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 
 			// 优先解析通知节点-五个
 			// <aop:before> & <aop:after> & <aop:after-returning> & <aop:after-throwing> & <aop:around>
+			// 解析五个标签对应的 bean definition 并注册到容器中
+			// before --> AspectJMethodBeforeAdvice
+			// after --> AspectJAfterAdvice
+			// after-returning --> AspectJAfterReturningAdvice
+			// after-throwing --> AspectJAfterThrowingAdvice
+			// around --> AspectJAroundAdvice
 			// We have to parse "advice" and all the advice kinds in one loop, to get the
 			// ordering semantics right.
 			NodeList nodeList = aspectElement.getChildNodes();
@@ -254,13 +270,15 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 						beanReferences.add(new RuntimeBeanReference(aspectName));
 					}
 					// 解析通知节点,创建对应的 bean definition
+					// 遍历解析所有通知节点,并注册到容器中[注册的是 AspectJPointcutAdvisor beanDefinition ]
 					AbstractBeanDefinition advisorDefinition = parseAdvice(
 							aspectName, i, aspectElement, (Element) node, parserContext, beanDefinitions, beanReferences);
 					beanDefinitions.add(advisorDefinition);
 				}
 			}
 
-			// 构建一个Aspect标签组件定义 并推送到解析上下文中
+			// 这里的切面组件[Aspect标签组件]: 包含了所有通知的beanDefinitions
+			// 构建一个Aspect标签组件定义并推送到解析上下文中
 			// beanDefinitions 所有的aop通知 bean definition
 			// beanReferences [aspect ref && pointcut-ref 两个标签对应的 beanName]
 			AspectComponentDefinition aspectComponentDefinition = createAspectComponentDefinition(
@@ -268,8 +286,11 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			parserContext.pushContainingComponent(aspectComponentDefinition);
 
 			// 然后解析 <aop:pointcut> 节点
+			// <aop:pointcut id="addAllMethod" expression="execution(* org.springframework.aop.config.dao.*(..))" />
 			List<Element> pointcuts = DomUtils.getChildElementsByTagName(aspectElement, POINTCUT);
 			for (Element pointcutElement : pointcuts) {
+				// beanName: Class全路径+"#"+全局计数器
+				// 生成对应的beanName: org.springframework.aop.aspectj.AspectJExpressionPointcut#序号
 				parsePointcut(pointcutElement, parserContext);
 			}
 
@@ -351,6 +372,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			this.parseState.push(new AdviceEntry(parserContext.getDelegate().getLocalName(adviceElement)));
 
 			// create the method factory bean
+			// 织入回调
+			// 标注通知时需要调用哪个bean[aspectName]的哪个方法[methodName]
 			RootBeanDefinition methodDefinition = new RootBeanDefinition(MethodLocatingFactoryBean.class);
 			// aspect ref bean name [目标bean的beanName, 在实例化时进行增强操作]
 			methodDefinition.getPropertyValues().add("targetBeanName", aspectName);
@@ -365,15 +388,27 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			aspectFactoryDef.getPropertyValues().add("aspectBeanName", aspectName);
 			aspectFactoryDef.setSynthetic(true);
 
-			// register the pointcut
+			// register the pointcut advisor
+
 			// <aop:before method="xxxx" pointcut-ref="addAllMethod" pointcut="" arg-names="" />
 			// <aop:after method="xxxx" pointcut-ref="addAllMethod" pointcut="" arg-names="" />
-			// 创建五个标签的 bean definition [通知 bean definition]
+			// 创建五个标签的 bean definition, 此时已经设置了通知时调用哪个bean的哪个方法[通知 bean definition]
+			// 五个标签对应的 bean definition 如下
+			// before --> AspectJMethodBeforeAdvice
+			// after --> AspectJAfterAdvice
+			// after-returning --> AspectJAfterReturningAdvice
+			// after-throwing --> AspectJAfterThrowingAdvice
+			// around --> AspectJAroundAdvice
 			AbstractBeanDefinition adviceDef = createAdviceDefinition(
 					adviceElement, parserContext, aspectName, order, methodDefinition, aspectFactoryDef,
 					beanDefinitions, beanReferences);
 
 			// configure the advisor
+			// 初始化增强beanDefinition
+			// 在满足于Aspect Exp表达式条件的Class/Method需要调用该增强中设置的 targetBeanN#methodName
+			// 当然增强通知存在多个,按照链式调用即可[单个切面 Aspect ]
+			// [1-around -> 2-before -> 3-targetMethod -> 4-around -> 5-after -> 6-afterReturning]
+			// 多个切面时根据 切换设置的 order, 数字越小 优先级越高
 			RootBeanDefinition advisorDefinition = new RootBeanDefinition(AspectJPointcutAdvisor.class);
 			advisorDefinition.setSource(parserContext.extractSource(adviceElement));
 			advisorDefinition.getConstructorArgumentValues().addGenericArgumentValue(adviceDef);
@@ -384,6 +419,9 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 
 			// register the final advisor
 			// 注册到容器 advisor bean definition[增强]
+			// beanName: Class全路径+"#"+全局计数器
+			// org.springframework.aop.aspectj.AspectJPointcutAdvisor#0
+			// org.springframework.aop.aspectj.AspectJPointcutAdvisor#1
 			parserContext.getReaderContext().registerWithGeneratedName(advisorDefinition);
 
 			return advisorDefinition;
@@ -435,14 +473,18 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		ConstructorArgumentValues cav = adviceDefinition.getConstructorArgumentValues();
 		cav.addIndexedArgumentValue(METHOD_INDEX, methodDef);
 
+		// <aop:after method="printTime" pointcut-ref="已经配置的pointcut-id" pointcut="表达式" />
+		// 解析上述配置中的 pointcut pointcut-ref 属性
 		Object pointcut = parsePointcutProperty(adviceElement, parserContext);
 		if (pointcut instanceof BeanDefinition) {
-			// pointcut
+			// pointcut 表达式 beanDefinition [bean class = AspectJExpressionPointcut]
 			cav.addIndexedArgumentValue(POINTCUT_INDEX, pointcut);
 			beanDefinitions.add((BeanDefinition) pointcut);
 		}
 		else if (pointcut instanceof String) {
-			// pointcut-ref
+			// pointcut-ref [ pointcut-id ]
+			// e.g. <aop:pointcut id="addAllMethod" expression="execution(* org.springframework.aop.config.dao.TestDao.*(..))" />
+			// pointcut-ref="addAllMethod"
 			RuntimeBeanReference pointcutRef = new RuntimeBeanReference((String) pointcut);
 			cav.addIndexedArgumentValue(POINTCUT_INDEX, pointcutRef);
 			beanReferences.add(pointcutRef);
@@ -499,12 +541,15 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			pointcutDefinition = createPointcutDefinition(expression);
 			pointcutDefinition.setSource(parserContext.extractSource(pointcutElement));
 
-			// 注册 bean definition
+			// 注册 bean definition 到容器中
 			String pointcutBeanName = id;
 			if (StringUtils.hasText(pointcutBeanName)) {
+				// id就是beanName
 				parserContext.getRegistry().registerBeanDefinition(pointcutBeanName, pointcutDefinition);
 			}
 			else {
+				// beanName: Class全路径+"#"+全局计数器
+				// 生成对应的beanName: org.springframework.aop.aspectj.AspectJExpressionPointcut#序号
 				pointcutBeanName = parserContext.getReaderContext().registerWithGeneratedName(pointcutDefinition);
 			}
 
@@ -539,6 +584,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		// pointcut
 		else if (element.hasAttribute(POINTCUT)) {
 			// Create a pointcut for the anonymous pc and register it.
+			// AspectJExpressionPointcut beanDefinition
 			String expression = element.getAttribute(POINTCUT);
 			AbstractBeanDefinition pointcutDefinition = createPointcutDefinition(expression);
 			pointcutDefinition.setSource(parserContext.extractSource(element));
