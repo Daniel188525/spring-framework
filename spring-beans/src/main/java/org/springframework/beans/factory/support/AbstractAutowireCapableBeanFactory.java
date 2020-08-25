@@ -509,8 +509,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			// instance 前的处理
 			// 给 BeanPostProcessors 一个机会用来返回一个代理类而不是真正的类实例
-			// AOP 的功能就是基于这个地方 [ e.g. AbstractAutoProxyCreator#postProcessBeforeInstantiation ]
 			// 实现 InstantiationAwareBeanPostProcessor 接口
+			// AOP 的功能就是基于这个地方 [ e.g. AbstractAutoProxyCreator#postProcessAfterInitialization ]
+			// 一般情况下这里返回的 bean == null
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				// 如果代理对象不为空,则直接返回代理对象
@@ -627,6 +628,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 属性值注入时涉及到类型的转换操作 spring string类型 --> PropertyValue#convertedValue
 			// 则会递归初始依赖 bean
 			populateBean(beanName, mbd, instanceWrapper);
+
 			// 调用初始化方法 init-method
 			// 在初始化完成后调用postProcessAfterInitialization方法中 [AOP的增强处理就是通过这个方法进行的]
 			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization
@@ -1941,7 +1943,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (mbd == null || !mbd.isSynthetic()) {
 			// 调用 init 方法后的后置处理器
 			// 在初始化完成后调用postProcessAfterInitialization方法中 [AOP的增强处理就是通过这个方法进行的]
-			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization
+			// AspectJAwareAdvisorAutoProxyCreator#postProcessAfterInitialization [在其抽象类AbstractAutoProxyCreator中]
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 

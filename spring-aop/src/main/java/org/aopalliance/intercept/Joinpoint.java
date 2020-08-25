@@ -19,6 +19,11 @@ package org.aopalliance.intercept;
 import java.lang.reflect.AccessibleObject;
 
 /**
+ * 连接点
+ * 在 Spring 中, 所有的方法都可以认为是 Joinpoint, 但是我们并不希望在所有的方法上都添加 Advice,
+ * 而 pointcut 的作用就是提供一组规则(使用 AspectJ pointcut expression language 来描述)来匹配joinpoint,
+ * 给满足规则的 joinpoint 添加 Advice <br/>
+ *
  * This interface represents a generic runtime joinpoint (in the AOP
  * terminology).
  *

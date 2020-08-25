@@ -73,6 +73,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected Object[] getAdvicesAndAdvisorsForBean(
 			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
 
+		// 为指定的class寻找合适的advisor
+		// 以XML配置为例,在使用 ConfigBeanDefinitionParser 解析AOP对应的配置时
+		// 注册了 AspectJPointcutAdvisor && AspectJExpressionPointcut
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
@@ -81,6 +84,10 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	}
 
 	/**
+	 * 为指定的class寻找合适的advisor
+	 * 以XML配置为例,在使用 ConfigBeanDefinitionParser 解析AOP对应的配置时
+	 * 注册了 AspectJPointcutAdvisor && AspectJExpressionPointcut <br/>
+	 *
 	 * Find all eligible Advisors for auto-proxying this class.
 	 * @param beanClass the clazz to find advisors for
 	 * @param beanName the name of the currently proxied bean
@@ -91,10 +98,16 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		// 获取候选的Advisor
+		// 解析XML AOP配置时所有的通知都会被包装成 AspectJPointcutAdvisor 并注册到容器中
+		// beanName: Class全路径 + "#" + 全局序号
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+		// 重点词 canApply
+		// 候选 Advisors 与 给出的 beanClass&&beanName 之间的 canApply
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {
+			// 排序
 			eligibleAdvisors = sortAdvisors(eligibleAdvisors);
 		}
 		return eligibleAdvisors;
@@ -121,11 +134,15 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected List<Advisor> findAdvisorsThatCanApply(
 			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
 
+		// 设置代理创建上下文信息: beanName
 		ProxyCreationContext.setCurrentProxiedBeanName(beanName);
 		try {
+			// 对于找到的 advisors 是否适配当前 beanClass
+			// AOP通知生成的 Advisor 是 AspectJPointcutAdvisor 类型的
 			return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
 		}
 		finally {
+			// 清空上下文 beanName
 			ProxyCreationContext.setCurrentProxiedBeanName(null);
 		}
 	}
