@@ -214,8 +214,11 @@ public class Enhancer extends AbstractClassGenerator {
 
 	private Class[] interfaces;
 
+	// 对特定的方法进行拦截增强处理 [动态匹配过滤对应的方法]
+	// 常用实现 ProxyCallbackFilter
 	private CallbackFilter filter;
 
+	// 回调的具体实现
 	private Callback[] callbacks;
 
 	private Type[] callbackTypes;
@@ -224,6 +227,7 @@ public class Enhancer extends AbstractClassGenerator {
 
 	private boolean classOnly;
 
+	// 被代理类
 	private Class superclass;
 
 	private Class[] argumentTypes;
@@ -384,6 +388,7 @@ public class Enhancer extends AbstractClassGenerator {
 	public Object create() {
 		classOnly = false;
 		argumentTypes = null;
+		// 不能对 static/final 方法进行增强处理
 		return createHelper();
 	}
 
@@ -568,7 +573,9 @@ public class Enhancer extends AbstractClassGenerator {
 				useFactory,
 				interceptDuringConstruction,
 				serialVersionUID);
+		// 创建key
 		this.currentKey = key;
+		// 委托其父类进行创建
 		Object result = super.create(key);
 		return result;
 	}
@@ -794,6 +801,10 @@ public class Enhancer extends AbstractClassGenerator {
 			argumentTypes = Constants.EMPTY_CLASS_ARRAY;
 			arguments = null;
 		}
+		// 被代理对象构造器类型
+		// 构造方法参数
+		// 回调对象
+		// 通过反射生成代理对象
 		return data.newInstance(argumentTypes, arguments, callbacks);
 	}
 
