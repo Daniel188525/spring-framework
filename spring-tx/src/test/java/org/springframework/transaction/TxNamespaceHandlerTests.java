@@ -101,4 +101,15 @@ public class TxNamespaceHandlerTests {
 		return (ITestBean) context.getBean("testBean");
 	}
 
+	// add by daniel
+	@Test
+	public void invokeTransactional2() {
+		ITestBean bean = getTestBean2();
+		bean.returnsThis(); // 测试，我们对 @Transactional 注解的效果
+	}
+
+	// add by daniel
+	private ITestBean getTestBean2() {
+		return (ITestBean) context.getBean("testBean2");
+	}
 }
