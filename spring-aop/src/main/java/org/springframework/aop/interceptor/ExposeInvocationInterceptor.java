@@ -44,9 +44,11 @@ import org.springframework.core.PriorityOrdered;
 public final class ExposeInvocationInterceptor implements MethodInterceptor, PriorityOrdered, Serializable {
 
 	/** Singleton instance of this class. */
+	// 单例一下
 	public static final ExposeInvocationInterceptor INSTANCE = new ExposeInvocationInterceptor();
 
 	/**
+	 * 封装成一个默认的增强器[ExposeInvocationInterceptor.ADVISOR]
 	 * Singleton advisor for this class. Use in preference to INSTANCE when using
 	 * Spring AOP, as it prevents the need to create a new Advisor to wrap the instance.
 	 */
@@ -57,6 +59,9 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 		}
 	};
 
+	/**
+	 * 用于存储线程上下文中的 MethodInvocation [先存后取]
+	 */
 	private static final ThreadLocal<MethodInvocation> invocation =
 			new NamedThreadLocal<>("Current AOP method invocation");
 
@@ -85,8 +90,11 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 	private ExposeInvocationInterceptor() {
 	}
 
+	// 调用链首先调用此ExposeInvocationInterceptor拦截器的invoke方法
+	// 并设置到线程变量中
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 第一次获取的是 oldInvocation == null, 把传入的mi放入到线程变量中
 		MethodInvocation oldInvocation = invocation.get();
 		invocation.set(mi);
 		try {
