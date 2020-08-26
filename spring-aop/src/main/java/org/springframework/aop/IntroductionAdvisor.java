@@ -17,6 +17,8 @@
 package org.springframework.aop;
 
 /**
+ * 它不是在目标方法周围织入增强，而是为目标类创建新的方法和属性，所以引介增强的连接点是类级别的，而非方法级别的
+ *
  * Superinterface for advisors that perform one or more AOP <b>introductions</b>.
  *
  * <p>This interface cannot be implemented directly; subinterfaces must

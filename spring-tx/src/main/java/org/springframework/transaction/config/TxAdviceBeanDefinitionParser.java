@@ -36,6 +36,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
+ * 解析 <tx:method /> XML 配置的解析器
+ *
  * {@link org.springframework.beans.factory.xml.BeanDefinitionParser
  * BeanDefinitionParser} for the {@code <tx:advice/>} tag.
  *
