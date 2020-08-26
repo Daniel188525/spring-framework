@@ -194,6 +194,8 @@ public interface TransactionDefinition {
 
 
 	/**
+	 * 事务的传播行为
+	 *
 	 * Return the propagation behavior.
 	 * <p>Must return one of the {@code PROPAGATION_XXX} constants
 	 * defined on {@link TransactionDefinition this interface}.
@@ -204,6 +206,8 @@ public interface TransactionDefinition {
 	int getPropagationBehavior();
 
 	/**
+	 * 事务隔离级别
+	 *
 	 * Return the isolation level.
 	 * <p>Must return one of the {@code ISOLATION_XXX} constants defined on
 	 * {@link TransactionDefinition this interface}. Those constants are designed
@@ -223,6 +227,8 @@ public interface TransactionDefinition {
 	int getIsolationLevel();
 
 	/**
+	 * 事务超时时间
+	 *
 	 * Return the transaction timeout.
 	 * <p>Must return a number of seconds, or {@link #TIMEOUT_DEFAULT}.
 	 * <p>Exclusively designed for use with {@link #PROPAGATION_REQUIRED} or
@@ -235,6 +241,8 @@ public interface TransactionDefinition {
 	int getTimeout();
 
 	/**
+	 * 是否只读
+	 *
 	 * Return whether to optimize as a read-only transaction.
 	 * <p>The read-only flag applies to any transaction context, whether backed
 	 * by an actual resource transaction ({@link #PROPAGATION_REQUIRED}/
@@ -253,6 +261,8 @@ public interface TransactionDefinition {
 	boolean isReadOnly();
 
 	/**
+	 * 事务名称
+	 *
 	 * Return the name of this transaction. Can be {@code null}.
 	 * <p>This will be used as the transaction name to be shown in a
 	 * transaction monitor, if applicable (for example, WebLogic's).

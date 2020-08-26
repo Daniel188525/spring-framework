@@ -289,6 +289,7 @@ public abstract class AopUtils {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
 		else if (advisor instanceof PointcutAdvisor) {
+			// 事务增强器 BeanFactoryTransactionAttributeSourceAdvisor 走这里
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
@@ -311,6 +312,7 @@ public abstract class AopUtils {
 			return candidateAdvisors;
 		}
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
+		// 引介增强器 [它不是在目标方法周围织入增强，而是为目标类创建新的方法和属性，所以引介增强的连接点是类级别的，而非方法级别的]
 		// 优先判断 IntroductionAdvisor 类型的是否满足canApply条件判断
 		// canApply 主要是根据配置的 expression 去匹配对应类及其中的方法,匹配上则返回true
 		for (Advisor candidate : candidateAdvisors) {

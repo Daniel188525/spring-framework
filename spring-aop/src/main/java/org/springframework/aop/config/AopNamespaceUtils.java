@@ -56,6 +56,8 @@ public abstract class AopNamespaceUtils {
 	public static void registerAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
 
+		// 1.注册 InfrastructureAdvisorAutoProxyCreator
+		// 初始化 bean 后, 可以包装和改变bean, 从而生成对应的代理类 [AOP实现]
 		BeanDefinition beanDefinition = AopConfigUtils.registerAutoProxyCreatorIfNecessary(
 				parserContext.getRegistry(), parserContext.extractSource(sourceElement));
 		useClassProxyingIfNecessary(parserContext.getRegistry(), sourceElement);
