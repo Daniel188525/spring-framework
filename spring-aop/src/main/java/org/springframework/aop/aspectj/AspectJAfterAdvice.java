@@ -44,9 +44,11 @@ public class AspectJAfterAdvice extends AbstractAspectJAdvice
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		try {
+			// 对于后置通知来说,先直接调用调用链-->执行目标类对应目标方法后-->执行本方法体中的finally块代码-->调用后置通知方法
 			return mi.proceed();
 		}
 		finally {
+			// 执行完目标类的目标方法后,才会执行该代码
 			invokeAdviceMethod(getJoinPointMatch(), null, null);
 		}
 	}

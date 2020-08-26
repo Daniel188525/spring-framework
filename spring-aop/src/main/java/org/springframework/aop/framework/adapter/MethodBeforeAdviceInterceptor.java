@@ -52,6 +52,8 @@ public class MethodBeforeAdviceInterceptor implements MethodInterceptor, BeforeA
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// org.springframework.aop.aspectj.AspectJMethodBeforeAdvice.before
+		// 先执行前置通知-->再执行调用链
 		this.advice.before(mi.getMethod(), mi.getArguments(), mi.getThis());
 		return mi.proceed();
 	}

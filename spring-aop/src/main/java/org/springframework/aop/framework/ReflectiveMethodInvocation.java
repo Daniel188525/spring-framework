@@ -109,11 +109,17 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 			Object proxy, @Nullable Object target, Method method, @Nullable Object[] arguments,
 			@Nullable Class<?> targetClass, List<Object> interceptorsAndDynamicMethodMatchers) {
 
+		// 生成的动态代理对象
 		this.proxy = proxy;
+		// 目标对象
 		this.target = target;
+		// 目标类对象
 		this.targetClass = targetClass;
+		// 目标方法
 		this.method = BridgeMethodResolver.findBridgedMethod(method);
+		// 目标方法参数
 		this.arguments = AopProxyUtils.adaptArgumentsIfNecessary(method, arguments);
+		// AOP拦截器执行链是一个MethodInterceptor的集合
 		this.interceptorsAndDynamicMethodMatchers = interceptorsAndDynamicMethodMatchers;
 	}
 
@@ -159,10 +165,17 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	@Nullable
 	public Object proceed() throws Throwable {
 		// We start with an index of -1 and increment early.
+		// TODO 调用链如何排序的?
+		// 如果执行到链条的末尾 则直接调用连接点方法 即 直接调用目标方法
+		// 调用链是已经被排序过的, 例如只有 before 和 after 通知时, before[AspectJMethodBeforeAdvice] 是在调用链的末尾的
+		// after[AspectJAfterAdvice] 在 before 之前, 头部是 ExposeInvocationInterceptor
+		// e.g. 以上面的为例: 当执行过before的对应增强后,判断条件为true,此时会直接调用目标方法
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			// 执行到最后一个拦截器时利用反射方式调用目标方法
 			return invokeJoinpoint();
 		}
 
+		// 维护计算器,得到下一个通知或拦截器
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
@@ -177,12 +190,15 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 			else {
 				// Dynamic matching failed.
 				// Skip this interceptor and invoke the next in the chain.
+				// 递归执行调用链中的下一个拦截器
 				return proceed();
 			}
 		}
 		else {
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
+			// 递归执行调用链中的下一个拦截器
+			// this == CglibMethodInvocation
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}

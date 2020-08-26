@@ -54,6 +54,8 @@ public abstract class AspectJProxyUtils {
 					break;
 				}
 			}
+			// isAspectJAdvice==true 并且没有 ExposeInvocationInterceptor 时添加一个进来
+			// 在执行拦截调用链时会首先调用 ExposeInvocationInterceptor#invoke方法
 			if (foundAspectJAdvice && !advisors.contains(ExposeInvocationInterceptor.ADVISOR)) {
 				advisors.add(0, ExposeInvocationInterceptor.ADVISOR);
 				return true;

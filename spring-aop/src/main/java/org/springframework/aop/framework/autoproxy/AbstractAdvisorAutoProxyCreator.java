@@ -105,6 +105,8 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 		// 重点词 canApply
 		// 候选 Advisors 与 给出的 beanClass&&beanName 之间的 canApply
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
+		// 添加个 ExposeInvocationInterceptor 暴露调用器的拦截器
+		// 该扩展方法会被子类覆盖实现
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {
 			// 排序

@@ -62,6 +62,7 @@ public class AnnotationAwareOrderComparator extends OrderComparator {
 	@Nullable
 	protected Integer findOrder(Object obj) {
 		// Check for regular Ordered interface
+		// 如果实现了 Ordered 则返回对应的顺序否则返回 null
 		Integer order = super.findOrder(obj);
 		if (order != null) {
 			return order;
