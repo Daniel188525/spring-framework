@@ -165,6 +165,8 @@ class CglibAopProxy implements AopProxy, Serializable {
 			Class<?> rootClass = this.advised.getTargetClass();
 			Assert.state(rootClass != null, "Target class must be available for creating a CGLIB proxy");
 
+			// CGLIB 代理类通过继承被代理类实现动态代理
+			// 1.获得需要被代理的的类
 			Class<?> proxySuperClass = rootClass;
 			if (ClassUtils.isCglibProxyClass(rootClass)) {
 				proxySuperClass = rootClass.getSuperclass();
@@ -186,17 +188,22 @@ class CglibAopProxy implements AopProxy, Serializable {
 					enhancer.setUseCache(false);
 				}
 			}
+			// 2.设置被代理类为代理类的父类[所以CGLIB代理产生的PROXY都是其被代理类的子类]
 			enhancer.setSuperclass(proxySuperClass);
+			// 3.设置代理类需要实现的接口
 			enhancer.setInterfaces(AopProxyUtils.completeProxiedInterfaces(this.advised));
 			enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 			enhancer.setStrategy(new ClassLoaderAwareUndeclaredThrowableStrategy(classLoader));
 
+			// 获取到生成代理类所需的所有 Callback
+			// 这些 callback 最终设置到 enhancer 中用于拦截对应的方法
 			Callback[] callbacks = getCallbacks(rootClass);
 			Class<?>[] types = new Class<?>[callbacks.length];
 			for (int x = 0; x < types.length; x++) {
 				types[x] = callbacks[x].getClass();
 			}
 			// fixedInterceptorMap only populated at this point, after getCallbacks call above
+			// ProxyCallbackFilter 用于过滤对应的方法,确保拦截满足条件的方法
 			enhancer.setCallbackFilter(new ProxyCallbackFilter(
 					this.advised.getConfigurationOnlyCopy(), this.fixedInterceptorMap, this.fixedInterceptorOffset));
 			enhancer.setCallbackTypes(types);
@@ -287,10 +294,12 @@ class CglibAopProxy implements AopProxy, Serializable {
 		boolean isStatic = this.advised.getTargetSource().isStatic();
 
 		// Choose an "aop" interceptor (used for AOP calls).
+		// 定义一个用于 AOP 调用的 MethodInterceptor (DynamicAdvisedInterceptor)
 		Callback aopInterceptor = new DynamicAdvisedInterceptor(this.advised);
 
 		// Choose a "straight to target" interceptor. (used for calls that are
 		// unadvised but can return this). May be required to expose the proxy.
+		// targetInterceptor 是不对方法做增强处理的 MethodInterceptor，直接在 intercept 调用目标对象的目标方法
 		Callback targetInterceptor;
 		if (exposeProxy) {
 			targetInterceptor = (isStatic ?
