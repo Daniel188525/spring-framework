@@ -26,6 +26,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.tests.sample.beans.ITestBean;
 import org.springframework.tests.transaction.CallCountingTransactionManager;
+import org.springframework.transaction.daniel.TestBean2;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
@@ -104,12 +105,12 @@ public class TxNamespaceHandlerTests {
 	// add by daniel
 	@Test
 	public void invokeTransactional2() {
-		ITestBean bean = getTestBean2();
+		TestBean2 bean = getTestBean2();
 		bean.returnsThis(); // 测试，我们对 @Transactional 注解的效果
 	}
 
 	// add by daniel
-	private ITestBean getTestBean2() {
-		return (ITestBean) context.getBean("testBean2");
+	private TestBean2 getTestBean2() {
+		return (TestBean2) context.getBean("testBean2");
 	}
 }

@@ -73,7 +73,8 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 		}
 		else {
 			// mode="proxy"
-			// 使用内部类初始化 AOP
+			// 使用内部类初始化 AOP [实际上就是个 BeanPostProcessor#postProcessAfterInitialization ]
+			// InfrastructureAdvisorAutoProxyCreator
 			AopAutoProxyConfigurer.configureAutoProxyCreator(element, parserContext);
 		}
 		return null;
@@ -128,6 +129,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 			String txAdvisorBeanName = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME;
 			// 确保只会解析一次 <tx:annotation-driven/> 标签
 			// bean definition name == "org.springframework.transaction.config.internalTransactionAdvisor"
+			// beanClass = BeanFactoryTransactionAttributeSourceAdvisor
 			if (!parserContext.getRegistry().containsBeanDefinition(txAdvisorBeanName)) {
 				Object eleSource = parserContext.extractSource(element);
 
@@ -140,6 +142,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 				sourceDef.setSource(eleSource);
 				sourceDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 				// AnnotationTransactionAttributeSource name 放到第三个beanDefinition的pvs中
+				// 全路径 + '#' + 全局序号
 				String sourceName = parserContext.getReaderContext().registerWithGeneratedName(sourceDef);
 
 				// Create the TransactionInterceptor definition.
@@ -160,6 +163,9 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 				advisorDef.setSource(eleSource);
 				advisorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 				advisorDef.getPropertyValues().add("transactionAttributeSource", new RuntimeBeanReference(sourceName));
+				// 通过 setAdviceBeanName 方法设置 通知bean的beanName
+				// 通过 getAdvice 方法获取对应beanName的实例, 用于拦截目标类的目标方法,进而实现事务功能
+				// 这里获取到的 Advice 是 TransactionInterceptor
 				advisorDef.getPropertyValues().add("adviceBeanName", interceptorName);
 				if (element.hasAttribute("order")) {
 					advisorDef.getPropertyValues().add("order", element.getAttribute("order"));

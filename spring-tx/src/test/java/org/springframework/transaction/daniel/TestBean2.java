@@ -8,11 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
  * @Author: daniel.zhao
  * @Date: 2020/8/26 17:44
  */
-public class TestBean2 extends TestBean {
+public class TestBean2 {
 
-	@Override
 	@Transactional
 	public Object returnsThis() {
-		return super.returnsThis();
+		return "returnsThis";
 	}
 }
