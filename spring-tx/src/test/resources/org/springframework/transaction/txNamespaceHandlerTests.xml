@@ -10,25 +10,25 @@
 	<!-- add by daniel：用于触发 AnnotationDrivenBeanDefinitionParser 的调试 -->
 	<tx:annotation-driven proxy-target-class="true" order="0" />
 
-	<aop:config>
-		<!-- modify by daniel：增加 order="1" -->
-		<aop:advisor pointcut="execution(* *..ITestBean.*(..))" advice-ref="txAdvice" order="1" />
-	</aop:config>
+<!--	<aop:config>-->
+<!--		&lt;!&ndash; modify by daniel：增加 order="1" &ndash;&gt;-->
+<!--		<aop:advisor pointcut="execution(* *..ITestBean.*(..))" advice-ref="txAdvice" order="1" />-->
+<!--	</aop:config>-->
 
-	<tx:advice id="txAdvice">
-		<tx:attributes>
-			<tx:method name="get*" read-only="true"/>
-			<tx:method name="set*"/>
-			<tx:method name="exceptional"/>
-		</tx:attributes>
-	</tx:advice>
+<!--	<tx:advice id="txAdvice">-->
+<!--		<tx:attributes>-->
+<!--			<tx:method name="get*" read-only="true"/>-->
+<!--			<tx:method name="set*"/>-->
+<!--			<tx:method name="exceptional"/>-->
+<!--		</tx:attributes>-->
+<!--	</tx:advice>-->
 
-	<tx:advice id="txRollbackAdvice">
-		<tx:attributes>
-			<tx:method name="get*" rollback-for="java.lang.Exception"/>
-			<tx:method name="set*" no-rollback-for="java.lang.RuntimeException"/>
-		</tx:attributes>
-	</tx:advice>
+<!--	<tx:advice id="txRollbackAdvice">-->
+<!--		<tx:attributes>-->
+<!--			<tx:method name="get*" rollback-for="java.lang.Exception"/>-->
+<!--			<tx:method name="set*" no-rollback-for="java.lang.RuntimeException"/>-->
+<!--		</tx:attributes>-->
+<!--	</tx:advice>-->
 
 	<bean id="transactionManager" class="org.springframework.tests.transaction.CallCountingTransactionManager"/>
 

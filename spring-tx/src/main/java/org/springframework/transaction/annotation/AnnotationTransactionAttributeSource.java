@@ -31,6 +31,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
+ * 事务属性源
+ *
  * Implementation of the
  * {@link org.springframework.transaction.interceptor.TransactionAttributeSource}
  * interface for working with transaction metadata in JDK 1.5+ annotation format.
@@ -137,6 +139,8 @@ public class AnnotationTransactionAttributeSource extends AbstractFallbackTransa
 	}
 
 
+	// 获取目标类对象上的事务属性信息
+	// [方法优先级高于类, 所以这里可以解释为什么方法上设置的事务属性会覆盖类上设置的事务属性]
 	@Override
 	@Nullable
 	protected TransactionAttribute findTransactionAttribute(Class<?> clazz) {
