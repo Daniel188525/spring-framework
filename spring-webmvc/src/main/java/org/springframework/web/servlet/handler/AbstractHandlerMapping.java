@@ -73,15 +73,28 @@ import org.springframework.web.util.UrlPathHelper;
 public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		implements HandlerMapping, Ordered, BeanNameAware {
 
+	// 默认处理器
 	@Nullable
 	private Object defaultHandler;
 
+	/**
+	 * URL 路径工具类
+	 */
 	private UrlPathHelper urlPathHelper = new UrlPathHelper();
 
+	/**
+	 * 路径匹配器
+	 */
 	private PathMatcher pathMatcher = new AntPathMatcher();
 
+	/**
+	 * 配置的拦截器数组
+	 */
 	private final List<Object> interceptors = new ArrayList<>();
 
+	/**
+	 * 初始化后的拦截器 HandlerInterceptor 数组
+	 */
 	private final List<HandlerInterceptor> adaptedInterceptors = new ArrayList<>();
 
 	private CorsConfigurationSource corsConfigurationSource = new UrlBasedCorsConfigurationSource();
@@ -292,8 +305,11 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	@Override
 	protected void initApplicationContext() throws BeansException {
+		// 空方法。交给子类实现，用于注册自定义的拦截器到 interceptors 中
 		extendInterceptors(this.interceptors);
+		// 扫描已注册的 MappedInterceptor 的 Bean 们，添加到 mappedInterceptors 中
 		detectMappedInterceptors(this.adaptedInterceptors);
+		// 将 interceptors 初始化成 HandlerInterceptor 类型，添加到 mappedInterceptors 中
 		initInterceptors();
 	}
 
@@ -401,7 +417,9 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 获得处理器。该方法是抽象方法，由子类实现 [模板方法 说来就来]
 		Object handler = getHandlerInternal(request);
+		// 获得不到，则使用默认处理器
 		if (handler == null) {
 			handler = getDefaultHandler();
 		}
@@ -409,11 +427,14 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			return null;
 		}
 		// Bean name or resolved handler?
+		// 如果找到的处理器是 String 类型，则从容器中找到 String 对应的 Bean 类型作为处理器
 		if (handler instanceof String) {
 			String handlerName = (String) handler;
 			handler = obtainApplicationContext().getBean(handlerName);
 		}
 
+		// 获得 HandlerExecutionChain 对象
+		// 该对象中封装了 handler && 对应的拦截器
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
 
 		if (logger.isTraceEnabled()) {
@@ -423,6 +444,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			logger.debug("Mapped to " + executionChain.getHandler());
 		}
 
+		// 跨域
 		if (CorsUtils.isCorsRequest(request)) {
 			CorsConfiguration globalConfig = this.corsConfigurationSource.getCorsConfiguration(request);
 			CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
@@ -476,7 +498,9 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
 				(HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
 
+		// 获取请求路径
 		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request);
+		// 用请求路径匹配对应的拦截器,并添加到chain中
 		for (HandlerInterceptor interceptor : this.adaptedInterceptors) {
 			if (interceptor instanceof MappedInterceptor) {
 				MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
