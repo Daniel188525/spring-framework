@@ -56,6 +56,7 @@ import org.springframework.core.type.filter.TypeFilter;
 @Target(ElementType.TYPE)
 @Documented
 @Repeatable(ComponentScans.class)
+// 由 ComponentScanAnnotationParser 解析
 public @interface ComponentScan {
 
 	/**

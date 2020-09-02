@@ -83,12 +83,14 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.CONFI
  * @author Phillip Webb
  * @since 3.0
  */
+// 容器的后置处理器: [修改 bean definition && 动态的注册 bean definition]
+// 排序 资源读取
 public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
 		PriorityOrdered, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 
+	// bean name
 	private static final String IMPORT_REGISTRY_BEAN_NAME =
 			ConfigurationClassPostProcessor.class.getName() + ".importRegistry";
-
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -214,11 +216,13 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 
 	/**
+	 * 从注册表中配置类派生 bean defitnions
 	 * Derive further bean definitions from the configuration classes in the registry.
 	 */
 	@Override
 	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 		int registryId = System.identityHashCode(registry);
+		// 防止重复执行
 		if (this.registriesPostProcessed.contains(registryId)) {
 			throw new IllegalStateException(
 					"postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
@@ -227,6 +231,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			throw new IllegalStateException(
 					"postProcessBeanFactory already called on this post-processor against " + registry);
 		}
+		// 未执行时 ID 添加到对应的 set 中
 		this.registriesPostProcessed.add(registryId);
 
 		processConfigBeanDefinitions(registry);
@@ -244,13 +249,18 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					"postProcessBeanFactory already called on this post-processor against " + beanFactory);
 		}
 		this.factoriesPostProcessed.add(factoryId);
+		// 下面的if语句不会进入，因为在执行BeanFactoryPostProcessor时，会先执行BeanDefinitionRegistryPostProcessor的postProcessorBeanDefinitionRegistry()方法
+		// 而在执行postProcessorBeanDefinitionRegistry方法时，都会调用processConfigBeanDefinitions方法，这与postProcessorBeanFactory()方法的执行逻辑是一样的
+		// postProcessorBeanFactory()方法也会调用processConfigBeanDefinitions方法，为了避免重复执行，所以在执行方法之前会先生成一个id，将id放入到一个set当中，每次执行之前
+		// 先判断id是否存在，所以在此处，永远不会进入到if语句中
 		if (!this.registriesPostProcessed.contains(factoryId)) {
 			// BeanDefinitionRegistryPostProcessor hook apparently not supported...
 			// Simply call processConfigurationClasses lazily at this point then.
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
-
+		// 对加了@Configuration注解的配置类进行Cglib代理
 		enhanceConfigurationClasses(beanFactory);
+		// 添加一个BeanPostProcessor后置处理器
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
 
@@ -260,8 +270,16 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+		// 注册的所有的 beanNames
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
+		// 过滤出所有的 ConfigurationClass
+		// @Configuration full
+		// @Component lite
+		// @ComponentScan lite
+		// @Import lite
+		// @ImportResource lite
+		// @Bean lite
 		for (String beanName : candidateNames) {
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 			if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
@@ -305,6 +323,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// Parse each @Configuration class
+		// 解析所有加了 @Configuration 注解的类
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
@@ -312,6 +331,10 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
+			// 解析配置类，在此处会解析配置类上的注解(ComponentScan扫描出的类，@Import注册的类，以及@Bean方法定义的类)
+			// 注意：这一步只会将加了@Configuration注解以及通过@ComponentScan注解扫描的类加入到BeanDefinitionMap中
+			// 通过其他注解(例如@Import、@Bean)的方式，在parse()方法这一步并不会将其解析为BeanDefinition放入到BeanDefinitionMap中，而是先解析成ConfigurationClass类
+			// 真正放入到map中是在下面的this.reader.loadBeanDefinitions()方法中实现的
 			parser.parse(candidates);
 			parser.validate();
 
@@ -324,10 +347,21 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			// 将上一步parser解析出的ConfigurationClass类加载成BeanDefinition;
+			// 实际上经过上一步的parse()后，解析出来的bean已经放入到BeanDefinition中了，但是由于这些bean可能会引入新的bean，
+			// 例如实现了ImportBeanDefinitionRegistrar或者ImportSelector接口的bean，或者bean中存在被@Bean注解的方法;
+			// 因此需要执行一次loadBeanDefinition()，这样就会执行ImportBeanDefinitionRegistrar或者ImportSelector接口的方法或者@Bean注释的方法;
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 
 			candidates.clear();
+			// 这里判断registry.getBeanDefinitionCount() > candidateNames.length的目的是为了知道reader.loadBeanDefinitions(configClasses)
+			// 这一步有没有向BeanDefinitionMap中添加新的BeanDefinition;
+			// 实际上就是看配置类(例如AppConfig类会向BeanDefinitionMap中添加bean);
+			// 如果有，registry.getBeanDefinitionCount()就会大于candidateNames.length;
+			// 这样就需要再次遍历新加入的BeanDefinition，并判断这些bean是否已经被解析过了，如果未解析，需要重新进行解析;
+			// 这里的AppConfig类向容器中添加的bean，实际上在parser.parse()这一步已经全部被解析了;
+			// TODO 所以为什么还需要做这个判断，目前没看懂，似乎没有任何意义。
 			if (registry.getBeanDefinitionCount() > candidateNames.length) {
 				String[] newCandidateNames = registry.getBeanDefinitionNames();
 				Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames));
@@ -335,6 +369,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				for (ConfigurationClass configurationClass : alreadyParsed) {
 					alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
 				}
+				// 如果有未解析的类，则将其添加到candidates中，这样candidates不为空，就会进入到下一次的while的循环中
 				for (String candidateName : newCandidateNames) {
 					if (!oldCandidateNames.contains(candidateName)) {
 						BeanDefinition bd = registry.getBeanDefinition(candidateName);
@@ -399,6 +434,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				// Set enhanced subclass of the user-specified bean class
 				Class<?> configClass = beanDef.resolveBeanClass(this.beanClassLoader);
 				if (configClass != null) {
+					// 核心代码 生成代理类
 					Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
 					if (configClass != enhancedClass) {
 						if (logger.isTraceEnabled()) {

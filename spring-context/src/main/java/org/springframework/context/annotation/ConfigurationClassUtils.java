@@ -112,9 +112,11 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		// 含有 @Configuration 注解
 		if (isFullConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		// 含有 @Component @ComponentScan @Import @ImportResource @Bean 注解之一
 		else if (isLiteConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
