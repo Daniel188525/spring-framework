@@ -175,6 +175,7 @@ class ConfigurationClassParser {
 					parse(bd.getBeanClassName(), holder.getBeanName());
 				}
 			}
+
 			catch (BeanDefinitionStoreException ex) {
 				throw ex;
 			}
@@ -369,6 +370,7 @@ class ConfigurationClassParser {
 		if (!memberClasses.isEmpty()) {
 			List<SourceClass> candidates = new ArrayList<>(memberClasses.size());
 			for (SourceClass memberClass : memberClasses) {
+				// full lite判断是否是配置类
 				if (ConfigurationClassUtils.isConfigurationCandidate(memberClass.getMetadata()) &&
 						!memberClass.getMetadata().getClassName().equals(configClass.getMetadata().getClassName())) {
 					candidates.add(memberClass);
@@ -382,6 +384,7 @@ class ConfigurationClassParser {
 				else {
 					this.importStack.push(configClass);
 					try {
+						// 递归处理内部配置类
 						processConfigurationClass(candidate.asConfigClass(configClass));
 					}
 					finally {
@@ -583,9 +586,13 @@ class ConfigurationClassParser {
 						ImportSelector selector = BeanUtils.instantiateClass(candidateClass, ImportSelector.class);
 						ParserStrategyUtils.invokeAwareMethods(
 								selector, this.environment, this.resourceLoader, this.registry);
+						// 延迟类的交由 deferredImportSelectorHandler 最后处理
+						// 在这里只是注册到 deferredImportSelectors 列表中,并未进行处理
 						if (selector instanceof DeferredImportSelector) {
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
+						// 非延迟类的 ImportSelector ,直接执行其 selectImports 方法获取所有的类名称
+						// 递归调用最终执行到 else if[ImportBeanDefinitionRegistrar] 或者 else[普通的import bean] 部分
 						else {
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
 							Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames);

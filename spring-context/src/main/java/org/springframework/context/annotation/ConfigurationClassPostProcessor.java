@@ -85,6 +85,7 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.CONFI
  */
 // 容器的后置处理器: [修改 bean definition && 动态的注册 bean definition]
 // 排序 资源读取
+// 该后置处理器是在容器创建时注册到容器中的,注意看实例化容器时的构造方法
 public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
 		PriorityOrdered, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 
@@ -333,7 +334,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		do {
 			// 解析配置类，在此处会解析配置类上的注解(ComponentScan扫描出的类，@Import注册的类，以及@Bean方法定义的类)
 			// 注意：这一步只会将加了@Configuration注解以及通过@ComponentScan注解扫描的类加入到BeanDefinitionMap中
-			// 通过其他注解(例如@Import、@Bean)的方式，在parse()方法这一步并不会将其解析为BeanDefinition放入到BeanDefinitionMap中，而是先解析成ConfigurationClass类
+			// 通过其他注解(例如@Import、@ImportResource、@Bean)的方式，在parse()方法这一步并不会将其解析为BeanDefinition放入到BeanDefinitionMap中，而是先解析成ConfigurationClass类
 			// 真正放入到map中是在下面的this.reader.loadBeanDefinitions()方法中实现的
 			parser.parse(candidates);
 			parser.validate();
@@ -347,6 +348,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+
+			// Import类,@Bean,@ImportResource 转化为 BeanDefinition
 			// 将上一步parser解析出的ConfigurationClass类加载成BeanDefinition;
 			// 实际上经过上一步的parse()后，解析出来的bean已经放入到BeanDefinition中了，但是由于这些bean可能会引入新的bean，
 			// 例如实现了ImportBeanDefinitionRegistrar或者ImportSelector接口的bean，或者bean中存在被@Bean注解的方法;
